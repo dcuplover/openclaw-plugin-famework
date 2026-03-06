@@ -6,12 +6,7 @@
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
-    "generate:registry": "node ./scripts/generate-registry.mjs ./src/example-app ./src/generated/registry.ts",
-    "stage:plugin-artifact": "node ./scripts/stage-plugin-artifact.mjs ./dist/example-app/plugin.manifest.js",
-    "sync:plugin-package-json": "node ./scripts/sync-package-json.mjs ./dist/example-app/plugin.manifest.js",
-    "generate:plugin-manifest": "node ./scripts/generate-plugin-manifest.mjs ./dist/example-app/plugin.manifest.js",
-    "validate:plugin": "node ./scripts/validate-plugin.mjs ./dist/example-app/plugin.manifest.js",
-    "build": "npm run generate:registry && npx tsc -p tsconfig.json && npm run stage:plugin-artifact && npm run sync:plugin-package-json && npm run generate:plugin-manifest && npm run validate:plugin",
+    "build": "node ./scripts/build.mjs",
     "demo": "npm run build && node ./dist/example-app/bootstrap.js",
     "test": "npm run build && node --test"
   },

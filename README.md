@@ -49,8 +49,9 @@ Use `artifacts/example-app/` as the plugin root for `plugins.load.paths` or loca
 ## Documentation
 
 - `README.md`: quick project overview
-- `ARCHITECTURE.md`: architectural rationale and evolution direction
-- `USAGE_GUIDE.zh-CN.md`: detailed framework usage guide in Chinese
+- `docs/QUICKSTART.zh-CN.md`: fast path for registering module / tool / hook / CLI command
+- `docs/ARCHITECTURE.md`: architectural rationale and evolution direction
+- `docs/USAGE_GUIDE.zh-CN.md`: detailed framework usage guide in Chinese
 
 ## Main exported concepts
 

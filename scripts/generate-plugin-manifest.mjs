@@ -14,7 +14,8 @@ const manifestModulePath = path.resolve(cwd, manifestModuleArg);
 const require = createRequire(import.meta.url);
 
 const manifestModule = require(manifestModulePath);
-const frameworkModule = require(path.resolve(cwd, "./dist/index.js"));
+const compiledRoot = path.resolve(path.dirname(manifestModulePath), "..");
+const frameworkModule = require(path.resolve(compiledRoot, "index.js"));
 const pluginManifest = manifestModule.default;
 const toOpenClawPluginJson = frameworkModule.toOpenClawPluginJson;
 
