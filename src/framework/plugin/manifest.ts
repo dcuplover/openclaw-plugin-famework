@@ -1,8 +1,36 @@
 export type JsonSchema = Record<string, unknown>;
 
+export interface OpenClawChannelMetadata {
+  id: string;
+  label: string;
+  selectionLabel?: string;
+  detailLabel?: string;
+  docsPath?: string;
+  docsLabel?: string;
+  blurb?: string;
+  order?: number;
+  aliases?: string[];
+  preferOver?: string[];
+  systemImage?: string;
+  quickstartAllowFrom?: boolean;
+}
+
+export interface OpenClawInstallMetadata {
+  npmSpec?: string;
+  localPath?: string;
+  defaultChoice?: "npm" | "local";
+}
+
+export interface OpenClawPackageMetadata {
+  extensions?: string[];
+  channel?: OpenClawChannelMetadata;
+  install?: OpenClawInstallMetadata;
+}
+
 export interface PluginPackageManifest {
   packageName?: string;
   private?: boolean;
+  type?: string;
 }
 
 export interface PackageJsonFile {
@@ -10,8 +38,10 @@ export interface PackageJsonFile {
   version: string;
   description?: string;
   private?: boolean;
+  type?: string;
   main: string;
   types: string;
+  openclaw: OpenClawPackageMetadata;
 }
 
 export interface PluginBuildManifest {
@@ -19,29 +49,22 @@ export interface PluginBuildManifest {
   outputDir?: string;
   registryOutput?: string;
   artifactRoot?: string;
+  artifactEntry?: string;
   packageJsonOutput?: string;
   pluginManifestOutput?: string;
 }
 
-export interface PluginOpenClawManifest {
-  runtime: "node";
-  entry: string;
-  displayName?: string;
-  minHostVersion?: string;
-  capabilities?: string[];
-}
-
 export interface OpenClawPluginFile {
   id: string;
-  name: string;
-  version: string;
+  configSchema: JsonSchema;
+  name?: string;
   description?: string;
-  runtime: "node";
-  entry: string;
-  displayName?: string;
-  minHostVersion?: string;
-  capabilities?: string[];
-  configSchema?: JsonSchema;
+  version?: string;
+  kind?: string;
+  channels?: string[];
+  providers?: string[];
+  skills?: string[];
+  uiHints?: Record<string, unknown>;
 }
 
 export interface PluginAppManifest<TConfig = unknown> {
@@ -55,8 +78,13 @@ export interface PluginManifest<TConfig = unknown> {
   name: string;
   version: string;
   description?: string;
-  configSchema?: JsonSchema;
-  openclaw: PluginOpenClawManifest;
+  kind?: string;
+  channels?: string[];
+  providers?: string[];
+  skills?: string[];
+  uiHints?: Record<string, unknown>;
+  configSchema: JsonSchema;
+  openclaw?: Omit<OpenClawPackageMetadata, "extensions">;
   app: PluginAppManifest<TConfig>;
   package?: PluginPackageManifest;
   build?: PluginBuildManifest;
@@ -73,22 +101,22 @@ export function toOpenClawPluginJson<TConfig = unknown>(
 ): OpenClawPluginFile {
   return {
     id: manifest.id,
-    name: manifest.name,
-    version: manifest.version,
-    description: manifest.description,
-    runtime: manifest.openclaw.runtime,
-    entry: manifest.openclaw.entry,
-    displayName: manifest.openclaw.displayName,
-    minHostVersion: manifest.openclaw.minHostVersion,
-    capabilities: manifest.openclaw.capabilities,
     configSchema: manifest.configSchema,
+    name: manifest.name,
+    description: manifest.description,
+    version: manifest.version,
+    kind: manifest.kind,
+    channels: manifest.channels,
+    providers: manifest.providers,
+    skills: manifest.skills,
+    uiHints: manifest.uiHints,
   };
 }
 
 export function toPackageJsonFields<TConfig = unknown>(
   manifest: PluginManifest<TConfig>
 ): PackageJsonFile {
-  const main = manifest.openclaw.entry;
+  const main = manifest.build?.artifactEntry ?? "./index.js";
   const types = main.endsWith(".js") ? `${main.slice(0, -3)}.d.ts` : `${main}.d.ts`;
 
   return {
@@ -96,7 +124,13 @@ export function toPackageJsonFields<TConfig = unknown>(
     version: manifest.version,
     description: manifest.description,
     private: manifest.package?.private,
+    type: manifest.package?.type,
     main,
     types,
+    openclaw: {
+      extensions: [main],
+      channel: manifest.openclaw?.channel,
+      install: manifest.openclaw?.install,
+    },
   };
 }

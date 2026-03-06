@@ -10,6 +10,13 @@ export interface OpenClawPluginEntrypointOptions<TConfig = unknown> {
   logger?: FrameworkLogger;
 }
 
+interface OpenClawLoggerLike {
+  info?: (...args: unknown[]) => void;
+  warn?: (...args: unknown[]) => void;
+  error?: (...args: unknown[]) => void;
+  debug?: (...args: unknown[]) => void;
+}
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
@@ -26,28 +33,37 @@ function mergeConfig<TConfig>(defaultConfig: TConfig | undefined, overrideConfig
   return overrideConfig as TConfig;
 }
 
+function getLoggerSink(api: OpenClawLikeApi): OpenClawLoggerLike | undefined {
+  return api.logger ?? api.log;
+}
+
 function createOpenClawLogger(api: OpenClawLikeApi, prefix: string): FrameworkLogger {
+  const sink = getLoggerSink(api);
+
   return {
     info(message, meta) {
-      api.log?.info?.(`[${prefix}] ${message}`, meta);
-      if (!api.log?.info) {
+      sink?.info?.(`[${prefix}] ${message}`, meta);
+      if (!sink?.info) {
         createConsoleLogger(prefix).info(message, meta);
       }
     },
     warn(message, meta) {
-      api.log?.warn?.(`[${prefix}] ${message}`, meta);
-      if (!api.log?.warn) {
+      sink?.warn?.(`[${prefix}] ${message}`, meta);
+      if (!sink?.warn) {
         createConsoleLogger(prefix).warn(message, meta);
       }
     },
     error(message, meta) {
-      api.log?.error?.(`[${prefix}] ${message}`, meta);
-      if (!api.log?.error) {
+      sink?.error?.(`[${prefix}] ${message}`, meta);
+      if (!sink?.error) {
         createConsoleLogger(prefix).error(message, meta);
       }
     },
     debug(message, meta) {
-      createConsoleLogger(prefix).debug?.(message, meta);
+      sink?.debug?.(`[${prefix}] ${message}`, meta);
+      if (!sink?.debug) {
+        createConsoleLogger(prefix).debug?.(message, meta);
+      }
     },
   };
 }

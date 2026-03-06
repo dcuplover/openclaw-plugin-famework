@@ -21,13 +21,13 @@ if (!pluginManifest || typeof pluginManifest !== "object") {
 
 const compiledAppDir = path.dirname(manifestModulePath);
 const compiledRootDir = path.resolve(compiledAppDir, "..");
-const entryPath = pluginManifest.openclaw?.entry;
+const entryPath = pluginManifest.build?.artifactEntry ?? "./index.js";
+const compiledAppDirName = path.basename(compiledAppDir);
 
 if (typeof entryPath !== "string" || entryPath.length === 0) {
-  throw new Error("Plugin manifest must declare openclaw.entry before staging artifacts.");
+  throw new Error("Plugin manifest must declare build.artifactEntry before staging artifacts.");
 }
 
-const artifactEntryDir = path.dirname(entryPath.replace(/^\.\//, ""));
 const artifactRoot = path.resolve(
   cwd,
   artifactRootArg ?? pluginManifest.build?.artifactRoot ?? path.join("artifacts", pluginManifest.id)
@@ -50,9 +50,32 @@ const copyPlan = [
   },
   {
     source: compiledAppDir,
-    target: artifactEntryDir === "." ? artifactRoot : path.join(artifactRoot, artifactEntryDir),
+    target: path.join(artifactRoot, compiledAppDirName),
   },
 ];
+
+function toCompiledRuntimePath(entrySource) {
+  const entryFileName = path.basename(entrySource ?? "index.ts");
+  return entryFileName.replace(/\.(ts|tsx|mts|cts)$/, ".js");
+}
+
+function toCompiledDeclarationPath(runtimeFileName) {
+  return runtimeFileName.endsWith(".js") ? `${runtimeFileName.slice(0, -3)}.d.ts` : `${runtimeFileName}.d.ts`;
+}
+
+function toPosixRelative(fromPath, toPath, keepExtension = true) {
+  let relativePath = path.relative(path.dirname(fromPath), toPath).replace(/\\/g, "/");
+
+  if (!keepExtension) {
+    relativePath = relativePath.replace(/\.d\.ts$/, "").replace(/\.ts$/, "").replace(/\.js$/, "");
+  }
+
+  if (!relativePath.startsWith(".")) {
+    relativePath = `./${relativePath}`;
+  }
+
+  return relativePath;
+}
 
 await fs.rm(artifactRoot, { recursive: true, force: true });
 await fs.mkdir(artifactRoot, { recursive: true });
@@ -60,5 +83,37 @@ await fs.mkdir(artifactRoot, { recursive: true });
 for (const { source, target } of copyPlan) {
   await fs.cp(source, target, { recursive: true });
 }
+
+const normalizedEntryPath = entryPath.replace(/^\.\//, "");
+const artifactRuntimeEntryPath = path.join(artifactRoot, normalizedEntryPath);
+const compiledRuntimeFileName = toCompiledRuntimePath(pluginManifest.build?.entrySource);
+const compiledRuntimeEntryPath = path.join(artifactRoot, compiledAppDirName, compiledRuntimeFileName);
+const artifactDeclarationEntryPath = artifactRuntimeEntryPath.endsWith(".js")
+  ? `${artifactRuntimeEntryPath.slice(0, -3)}.d.ts`
+  : `${artifactRuntimeEntryPath}.d.ts`;
+const compiledDeclarationEntryPath = path.join(
+  artifactRoot,
+  compiledAppDirName,
+  toCompiledDeclarationPath(compiledRuntimeFileName)
+);
+
+await fs.mkdir(path.dirname(artifactRuntimeEntryPath), { recursive: true });
+await fs.writeFile(
+  artifactRuntimeEntryPath,
+  [
+    '"use strict";',
+    `module.exports = require(${JSON.stringify(toPosixRelative(artifactRuntimeEntryPath, compiledRuntimeEntryPath))});`,
+    "",
+  ].join("\n"),
+  "utf8"
+);
+await fs.writeFile(
+  artifactDeclarationEntryPath,
+  [
+    `export { default } from ${JSON.stringify(toPosixRelative(artifactDeclarationEntryPath, compiledDeclarationEntryPath, false))};`,
+    "",
+  ].join("\n"),
+  "utf8"
+);
 
 console.log(`Staged plugin artifact at ${artifactRoot}`);

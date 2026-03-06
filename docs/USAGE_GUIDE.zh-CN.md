@@ -113,6 +113,8 @@ framework/
       core/
       openclaw/
     example-app/
+      index.ts
+      plugin.manifest.ts
       modules/
       tools/
       hooks/
@@ -120,6 +122,11 @@ framework/
       bootstrap.ts
     generated/
       registry.ts
+  artifacts/
+    example-app/
+      package.json
+      openclaw.plugin.json
+      index.js
   scripts/
     generate-registry.mjs
 ```
@@ -138,9 +145,21 @@ framework/
   一个真正的应用示例。
   它不是“测试数据”，而是告诉你一个框架应用应该长什么样。
 
+- `src/example-app/index.ts`
+  OpenClaw 宿主真正加载的源码入口。
+  它保持极薄，只暴露指南兼容的 `register(api)` 对象。
+
+- `src/example-app/plugin.manifest.ts`
+  插件元数据单一事实来源。
+  构建时由它投影出 `package.json` 和 `openclaw.plugin.json`。
+
 - `src/generated/registry.ts`
   由生成脚本产物写出。
   不是主要编辑目标。
+
+- `artifacts/example-app/`
+  最终可安装插件根目录。
+  这里会生成指南要求的三个核心文件：`package.json`、`openclaw.plugin.json`、`index.js`。
 
 - `scripts/generate-registry.mjs`
   自动发现和生成注册表的入口。
@@ -227,6 +246,8 @@ commands/*.command.ts
 
 ```text
 src/my-plugin-app/
+  index.ts
+  plugin.manifest.ts
   modules/
   tools/
   hooks/
@@ -324,7 +345,61 @@ export default defineCommand({
 npm run generate:registry
 ```
 
-### 第七步：在 bootstrap 中启动
+### 第七步：写插件清单和宿主入口
+
+`plugin.manifest.ts` 负责声明插件 ID、配置 Schema 和构建输出：
+
+```ts
+import { definePlugin } from "../framework/plugin/manifest";
+
+export default definePlugin({
+  id: "my-plugin-app",
+  name: "My Plugin App",
+  version: "0.1.0",
+  configSchema: {
+    type: "object",
+    additionalProperties: false,
+    properties: {},
+  },
+  app: {
+    root: "src/my-plugin-app",
+    registryPath: "src/generated/registry.ts",
+  },
+  package: {
+    packageName: "my-plugin-app",
+    private: true,
+  },
+  build: {
+    entrySource: "src/my-plugin-app/index.ts",
+    artifactEntry: "./index.js",
+    artifactRoot: "artifacts/my-plugin-app",
+  },
+});
+```
+
+`index.ts` 则导出指南兼容的对象形式入口：
+
+```ts
+import { registry } from "../generated/registry";
+import { bootstrapOpenClawPlugin } from "../framework/openclaw/bootstrap";
+import pluginManifest from "./plugin.manifest";
+
+const entry = bootstrapOpenClawPlugin(pluginManifest, registry);
+
+export default {
+  id: pluginManifest.id,
+  name: pluginManifest.name,
+  configSchema: pluginManifest.configSchema,
+  register(api) {
+    return entry({
+      api,
+      config: api.pluginConfig,
+    });
+  },
+};
+```
+
+### 第八步：在 bootstrap 中做本地演示启动
 
 参考 `framework/src/example-app/bootstrap.ts`：
 
@@ -337,6 +412,22 @@ const runtime = await bootstrapMicrokernel({
   logger,
 });
 ```
+
+### 第九步：构建最终插件产物
+
+```bash
+npm run build
+```
+
+构建完成后，最终可安装插件目录位于：
+
+`artifacts/my-plugin-app/`
+
+其中会生成：
+
+- `package.json`，包含 `openclaw.extensions`
+- `openclaw.plugin.json`，包含原生插件清单字段
+- `index.js`，作为插件根入口包装壳
 
 ---
 
@@ -652,24 +743,25 @@ const retriever = context.container.resolve<RetrieverService>("retriever");
 接入思路如下：
 
 ```ts
-import { bootstrapMicrokernel, createOpenClawAdapter, createConsoleLogger } from "...";
+import { bootstrapOpenClawPlugin } from "...";
 import { registry } from "...";
+import pluginManifest from "./plugin.manifest";
 
 export default {
   id: "my-plugin",
   name: "my-plugin",
   kind: "custom",
   register(api: any) {
-    return bootstrapMicrokernel({
-      appId: "my-plugin",
+    return bootstrapOpenClawPlugin(pluginManifest, registry)({
+      api,
       config: api.pluginConfig,
-      registry,
-      host: createOpenClawAdapter(api),
-      logger: createConsoleLogger("my-plugin"),
     });
   },
 };
 ```
+
+这里推荐通过 `bootstrapOpenClawPlugin()` 进入真实宿主，而不是每个插件都手写一遍 `bootstrapMicrokernel()`。
+这样可以把宿主 logger、配置合并和 HostAdapter 适配都收敛在同一层。
 
 ### 当前需要注意的一点
 
@@ -760,6 +852,16 @@ export default {
 - 调用 `bootstrapMicrokernel()`
 
 不要把业务再写回 bootstrap。
+
+### 17.6 index 入口也保持极薄
+
+OpenClaw 宿主入口 `src/<app>/index.ts` 只做三件事：
+
+- 导入 `plugin.manifest.ts`
+- 导入 `src/generated/registry.ts`
+- 导出带 `register(api)` 的薄包装对象
+
+不要把 tool、hook、service 初始化重新塞回 `index.ts`。
 
 ---
 
@@ -856,7 +958,10 @@ export default {
 - Host 适配器：`framework/src/framework/openclaw/adapter.ts`
 - 注册表生成脚本：`framework/scripts/generate-registry.mjs`
 - 注册表产物：`framework/src/generated/registry.ts`
-- 示例启动入口：`framework/src/example-app/bootstrap.ts`
+- 插件元数据入口：`framework/src/example-app/plugin.manifest.ts`
+- OpenClaw 宿主入口：`framework/src/example-app/index.ts`
+- 本地演示启动入口：`framework/src/example-app/bootstrap.ts`
+- 最终插件产物根目录：`framework/artifacts/example-app/`
 - 示例 module：`framework/src/example-app/modules/`
 - 示例 tool：`framework/src/example-app/tools/`
 - 示例 hook：`framework/src/example-app/hooks/`

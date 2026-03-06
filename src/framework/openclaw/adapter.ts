@@ -30,6 +30,13 @@ export interface OpenClawLikeApi {
   registerTool(definition: unknown, meta?: unknown): void;
   registerCli(factory: (context: OpenClawCliContext) => void, meta?: { commands?: string[] }): void;
   on(event: string, handler: (payload: unknown) => Promise<void> | void): void;
+  pluginConfig?: Record<string, unknown>;
+  logger?: {
+    info?: (...args: unknown[]) => void;
+    warn?: (...args: unknown[]) => void;
+    error?: (...args: unknown[]) => void;
+    debug?: (...args: unknown[]) => void;
+  };
   log?: {
     info?: (...args: unknown[]) => void;
     warn?: (...args: unknown[]) => void;

@@ -27,6 +27,18 @@ function compareField(mismatches, label, actual, expected) {
   }
 }
 
+function compareUnexpectedFields(mismatches, labelPrefix, actual, expected) {
+  for (const key of Object.keys(actual)) {
+    if (!(key in expected)) {
+      mismatches.push({
+        label: `${labelPrefix}:${key}`,
+        actual: actual[key],
+        expected: undefined,
+      });
+    }
+  }
+}
+
 const manifestModule = require(manifestModulePath);
 const frameworkModule = require(path.resolve(cwd, "./dist/index.js"));
 const pluginManifest = manifestModule.default;
@@ -59,10 +71,12 @@ const mismatches = [];
 for (const [key, expected] of Object.entries(expectedPackageJsonFields)) {
   compareField(mismatches, `package.json:${key}`, packageJson[key], expected);
 }
+compareUnexpectedFields(mismatches, "package.json", packageJson, expectedPackageJsonFields);
 
 for (const [key, expected] of Object.entries(expectedOpenClawPluginJson)) {
   compareField(mismatches, `openclaw.plugin.json:${key}`, openClawPluginJson[key], expected);
 }
+compareUnexpectedFields(mismatches, "openclaw.plugin.json", openClawPluginJson, expectedOpenClawPluginJson);
 
 if (mismatches.length > 0) {
   console.error("Plugin validation failed. The following fields are out of sync:");

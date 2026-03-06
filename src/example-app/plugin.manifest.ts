@@ -20,11 +20,6 @@ export default definePlugin<ExampleAppConfig>({
   name: "Example App",
   version: "0.1.0",
   description: "Example OpenClaw plugin app built on the convention microkernel prototype.",
-  openclaw: {
-    runtime: "node",
-    entry: "./example-app/index.js",
-    displayName: "Example App",
-  },
   configSchema,
   app: {
     root: "src/example-app",
@@ -40,6 +35,7 @@ export default definePlugin<ExampleAppConfig>({
   },
   build: {
     entrySource: "src/example-app/index.ts",
+    artifactEntry: "./index.js",
     outputDir: "dist",
     registryOutput: "src/generated/registry.ts",
     artifactRoot: "artifacts/example-app",
