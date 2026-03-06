@@ -2,6 +2,7 @@ import { bootstrapMicrokernel } from "../framework/core/kernel";
 import { createConsoleLogger } from "../framework/core/logger";
 import { registry } from "../generated/registry";
 import { MockHostAdapter } from "./mock-host";
+import pluginManifest from "./plugin.manifest";
 
 interface ExampleAppConfig {
   environment: string;
@@ -11,13 +12,14 @@ interface ExampleAppConfig {
 async function main(): Promise<void> {
   const host = new MockHostAdapter();
   const logger = createConsoleLogger("example-app");
+  const defaultConfig: ExampleAppConfig = pluginManifest.app.defaultConfig ?? {
+    environment: "local-prototype",
+    greetingPrefix: "Architect-grade hello",
+  };
 
   const runtime = await bootstrapMicrokernel<ExampleAppConfig>({
-    appId: "example-app",
-    config: {
-      environment: "local-prototype",
-      greetingPrefix: "Architect-grade hello",
-    },
+    appId: pluginManifest.id,
+    config: defaultConfig,
     registry,
     host,
     logger,

@@ -6,6 +6,7 @@ A standalone prototype of a convention-based microkernel framework for the OpenC
 
 - A microkernel with dependency injection and lifecycle orchestration.
 - First-class contracts for modules, tools, hooks, and commands.
+- A first-class plugin manifest contract via `definePlugin()`.
 - A build-time registry generator for convention-based discovery.
 - A mock OpenClaw host adapter and a runnable example app.
 
@@ -49,8 +50,18 @@ npm run demo
 - `defineTool()`
 - `defineHook()`
 - `defineCommand()`
+- `definePlugin()`
+- `PluginManifest`
 - `bootstrapMicrokernel()`
 - `createOpenClawAdapter()`
+
+## Plugin-level contract
+
+The framework now includes a plugin manifest layer in addition to runtime definitions.
+
+- `definePlugin()` declares plugin identity, OpenClaw metadata, config schema, and build hints.
+- `PluginManifest` is the typed single source of truth for plugin packaging metadata.
+- `src/example-app/plugin.manifest.ts` shows the recommended starting point for a real plugin package.
 
 ## Why this matters
 
