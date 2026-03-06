@@ -30,7 +30,7 @@ if (typeof entryPath !== "string" || entryPath.length === 0) {
 
 const artifactRoot = path.resolve(
   cwd,
-  artifactRootArg ?? pluginManifest.build?.artifactRoot ?? path.join("artifacts", pluginManifest.id)
+  artifactRootArg ?? pluginManifest.build?.artifactRoot ?? path.join(pluginManifest.build?.outputDir ?? "artifacts", pluginManifest.id)
 );
 
 if (path.basename(artifactRoot) !== pluginManifest.id) {

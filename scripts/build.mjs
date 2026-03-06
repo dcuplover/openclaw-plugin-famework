@@ -68,7 +68,10 @@ const registryPath =
   extractStringField(manifestSource, "registryPath") ??
   extractStringField(manifestSource, "registryOutput") ??
   "src/generated/registry.ts";
-const outputDir = extractStringField(manifestSource, "outputDir") ?? "dist";
+const outputDir = extractStringField(manifestSource, "outputDir") ?? "artifacts";
+
+// tsc compiles to the directory specified by tsconfig.json outDir (default: dist)
+const compileDir = tsconfig.compilerOptions?.outDir ?? "./dist";
 
 if (!appRoot) {
   throw new Error(
@@ -76,12 +79,12 @@ if (!appRoot) {
   );
 }
 
-const resolvedOutDir = path.resolve(cwd, outputDir);
+const resolvedCompileDir = path.resolve(cwd, compileDir);
 
 // --- Compute compiled manifest path ---
 const relativeManifestPath = path.relative(tscRootDir, manifestSourcePath);
 const compiledManifestRelative = relativeManifestPath.replace(/\.ts$/, ".js");
-const compiledManifestPath = path.resolve(resolvedOutDir, compiledManifestRelative);
+const compiledManifestPath = path.resolve(resolvedCompileDir, compiledManifestRelative);
 const compiledManifestArg = path.relative(cwd, compiledManifestPath);
 
 function run(label, command) {
@@ -98,7 +101,7 @@ run(
 // --- Phase 2: Compile TypeScript (outDir driven by manifest) ---
 run(
   "Compiling TypeScript",
-  `npx tsc -p tsconfig.json --outDir "${outputDir}"`
+  `npx tsc -p tsconfig.json`
 );
 
 // --- Phase 3: Stage plugin artifact ---

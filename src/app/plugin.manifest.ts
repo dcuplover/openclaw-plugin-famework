@@ -36,10 +36,7 @@ export default definePlugin<ExampleAppConfig>({
   build: {
     entrySource: "src/app/index.ts",
     artifactEntry: "./index.js",
-    outputDir: "dist",
+    outputDir: "artifacts",
     registryOutput: "src/generated/registry.ts",
-    artifactRoot: "artifacts/app",
-    packageJsonOutput: "artifacts/app/package.json",
-    pluginManifestOutput: "artifacts/app/openclaw.plugin.json",
   },
 });

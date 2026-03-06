@@ -29,9 +29,10 @@ if (typeof toOpenClawPluginJson !== "function") {
   );
 }
 
+const artifactRoot = pluginManifest.build?.artifactRoot ?? path.join(pluginManifest.build?.outputDir ?? "artifacts", pluginManifest.id);
 const resolvedOutput = outputArg
   ? path.resolve(cwd, outputArg)
-  : path.resolve(cwd, pluginManifest.build?.pluginManifestOutput ?? "openclaw.plugin.json");
+  : path.resolve(cwd, pluginManifest.build?.pluginManifestOutput ?? path.join(artifactRoot, "openclaw.plugin.json"));
 
 const openClawPluginJson = toOpenClawPluginJson(pluginManifest);
 

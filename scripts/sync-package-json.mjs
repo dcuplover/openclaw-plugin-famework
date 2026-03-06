@@ -29,8 +29,9 @@ if (typeof toPackageJsonFields !== "function") {
 }
 
 const nextFields = toPackageJsonFields(pluginManifest);
+const artifactRoot = pluginManifest.build?.artifactRoot ?? path.join(pluginManifest.build?.outputDir ?? "artifacts", pluginManifest.id);
 const resolvedPackageJsonPath =
-  packageJsonPath ?? path.resolve(cwd, pluginManifest.build?.packageJsonOutput ?? "./package.json");
+  packageJsonPath ?? path.resolve(cwd, pluginManifest.build?.packageJsonOutput ?? path.join(artifactRoot, "package.json"));
 
 let existingPackageJson = {};
 try {
