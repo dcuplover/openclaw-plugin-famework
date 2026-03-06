@@ -1,6 +1,6 @@
 import { definePlugin } from "../framework/plugin/manifest";
 
-interface ExampleAppConfig {
+export interface ExampleAppConfig {
   environment: string;
   greetingPrefix: string;
 }
@@ -22,7 +22,7 @@ export default definePlugin<ExampleAppConfig>({
   description: "Example OpenClaw plugin app built on the convention microkernel prototype.",
   openclaw: {
     runtime: "node",
-    entry: "dist/index.js",
+    entry: "dist/example-app/index.js",
     displayName: "Example App",
   },
   configSchema,
@@ -35,13 +35,14 @@ export default definePlugin<ExampleAppConfig>({
     },
   },
   package: {
-    packageName: "@dcuplover/openclaw-microkernel-framework",
+    packageName: "@dcuplover/openclaw-example-app",
     private: true,
   },
   build: {
-    entrySource: "src/index.ts",
+    entrySource: "src/example-app/index.ts",
     outputDir: "dist",
     registryOutput: "src/generated/registry.ts",
-    pluginManifestOutput: "openclaw.plugin.json",
+    packageJsonOutput: "dist/example-app/package.json",
+    pluginManifestOutput: "dist/example-app/openclaw.plugin.json",
   },
 });

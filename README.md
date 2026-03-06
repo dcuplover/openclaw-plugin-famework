@@ -8,6 +8,10 @@ A standalone prototype of a convention-based microkernel framework for the OpenC
 - First-class contracts for modules, tools, hooks, and commands.
 - A first-class plugin manifest contract via `definePlugin()`.
 - A build-time registry generator for convention-based discovery.
+- A build-time plugin manifest generator for plugin artifacts under `dist/example-app/`.
+- A package metadata sync step driven from `PluginManifest`.
+- A validation step that checks plugin artifacts stay aligned with `PluginManifest`.
+- A thin example plugin entrypoint at `src/example-app/index.ts` for OpenClaw host loading.
 - A mock OpenClaw host adapter and a runnable example app.
 
 ## Core design principles
@@ -33,10 +37,12 @@ The generator scans the directories above and writes `src/generated/registry.ts`
 ## Commands
 
 ```bash
-cd framework
+npm install
 npm run build
 npm run demo
 ```
+
+`npm run build` now generates `src/generated/registry.ts`, writes `dist/example-app/package.json`, writes `dist/example-app/openclaw.plugin.json`, and validates that the plugin artifacts stay aligned with `PluginManifest`.
 
 ## Documentation
 
@@ -52,8 +58,11 @@ npm run demo
 - `defineCommand()`
 - `definePlugin()`
 - `PluginManifest`
+- `toOpenClawPluginJson()`
+- `toPackageJsonFields()`
 - `bootstrapMicrokernel()`
 - `createOpenClawAdapter()`
+- `bootstrapOpenClawPlugin()`
 
 ## Plugin-level contract
 
@@ -61,7 +70,44 @@ The framework now includes a plugin manifest layer in addition to runtime defini
 
 - `definePlugin()` declares plugin identity, OpenClaw metadata, config schema, and build hints.
 - `PluginManifest` is the typed single source of truth for plugin packaging metadata.
+- `toOpenClawPluginJson()` converts the framework manifest into the host-facing `openclaw.plugin.json` shape.
+- `toPackageJsonFields()` projects package-level fields such as `name`, `version`, `description`, `main`, and `types`.
+- `bootstrapOpenClawPlugin()` creates a thin host-facing entrypoint from a plugin manifest and generated registry.
 - `src/example-app/plugin.manifest.ts` shows the recommended starting point for a real plugin package.
+
+## Thin plugin entry
+
+`src/example-app/index.ts` now acts as the real plugin entrypoint.
+
+- `src/index.ts` remains the framework library export surface.
+- `src/example-app/index.ts` imports `src/example-app/plugin.manifest.ts`.
+- `src/example-app/index.ts` imports `src/generated/registry.ts`.
+- `src/example-app/index.ts` exports `default` as the OpenClaw-ready boot function returned by `bootstrapOpenClawPlugin()`.
+
+The host-facing shape is intentionally thin:
+
+```ts
+export default async function entry({ api, config, logger }) {
+  return bootstrapOpenClawPlugin(pluginManifest, registry)({ api, config, logger });
+}
+```
+
+That keeps plugin metadata, runtime assembly, and host adaptation separate.
+
+## Validation
+
+Run this explicitly if you want a consistency check without re-reading the source code manually:
+
+```bash
+npm run validate:plugin
+```
+
+It compares:
+
+- `PluginManifest -> dist/example-app/package.json`
+- `PluginManifest -> dist/example-app/openclaw.plugin.json`
+
+If any field drifts, the script exits non-zero and prints the mismatched field names with actual vs expected values.
 
 ## Why this matters
 
