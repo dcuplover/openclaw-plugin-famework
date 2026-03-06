@@ -12,7 +12,7 @@
     "validate:plugin": "node ./scripts/validate-plugin.mjs ./dist/example-app/plugin.manifest.js",
     "build": "npm run generate:registry && npx tsc -p tsconfig.json && npm run sync:plugin-package-json && npm run generate:plugin-manifest && npm run validate:plugin",
     "demo": "npm run build && node ./dist/example-app/bootstrap.js",
-    "test": "npm run build && node --test ./tests/openclaw-adapter.test.mjs"
+    "test": "npm run build && node --test"
   },
   "devDependencies": {
     "@types/node": "^20.11.0",
