@@ -7,7 +7,7 @@
   "types": "dist/index.d.ts",
   "scripts": {
     "build": "node ./scripts/build.mjs",
-    "demo": "npm run build && node ./dist/example-app/bootstrap.js",
+    "demo": "npm run build && node ./scripts/demo.mjs",
     "test": "npm run build && node --test"
   },
   "devDependencies": {

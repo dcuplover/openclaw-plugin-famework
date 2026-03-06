@@ -112,7 +112,7 @@ framework/
     framework/
       core/
       openclaw/
-    example-app/
+    app/
       index.ts
       plugin.manifest.ts
       modules/
@@ -123,7 +123,7 @@ framework/
     generated/
       registry.ts
   artifacts/
-    example-app/
+    app/
       package.json
       openclaw.plugin.json
       index.js
@@ -141,15 +141,15 @@ framework/
   OpenClaw 宿主适配层。
   用来把 HostAdapter 映射到 OpenClaw 的 API 形态。
 
-- `src/example-app/`
-  一个真正的应用示例。
-  它不是“测试数据”，而是告诉你一个框架应用应该长什么样。
+- `src/app/`
+  应用代码目录。
+  开发者直接在此目录中编写业务逻辑。
 
-- `src/example-app/index.ts`
+- `src/app/index.ts`
   OpenClaw 宿主真正加载的源码入口。
   它保持极薄，只暴露指南兼容的 `register(api)` 对象。
 
-- `src/example-app/plugin.manifest.ts`
+- `src/app/plugin.manifest.ts`
   插件元数据单一事实来源。
   构建时由它投影出 `package.json` 和 `openclaw.plugin.json`。
 
@@ -157,7 +157,7 @@ framework/
   由生成脚本产物写出。
   不是主要编辑目标。
 
-- `artifacts/example-app/`
+- `artifacts/app/`
   最终可安装插件根目录。
   这里会生成指南要求的三个核心文件：`package.json`、`openclaw.plugin.json`、`index.js`。
 
@@ -238,11 +238,11 @@ commands/*.command.ts
 
 ## 7. 如何创建一个新应用
 
-当前原型只有 `example-app`，但使用方式已经足够清晰。
+当前框架采用一对一模式，`src/app/` 即为插件应用目录。
 
-### 第一步：创建应用目录
+### 第一步：修改应用配置
 
-例如：
+直接编辑 `src/app/` 目录下的文件：
 
 ```text
 src/my-plugin-app/
@@ -261,9 +261,9 @@ src/my-plugin-app/
 
 示例模式见：
 
-- `framework/src/example-app/modules/platform.module.ts`
-- `framework/src/example-app/modules/greeter.module.ts`
-- `framework/src/example-app/modules/session.module.ts`
+- `framework/src/app/modules/platform.module.ts`
+- `framework/src/app/modules/greeter.module.ts`
+- `framework/src/app/modules/session.module.ts`
 
 最小模块写法：
 
@@ -401,7 +401,7 @@ export default {
 
 ### 第八步：在 bootstrap 中做本地演示启动
 
-参考 `framework/src/example-app/bootstrap.ts`：
+参考 `framework/src/app/bootstrap.ts`：
 
 ```ts
 const runtime = await bootstrapMicrokernel({
@@ -691,7 +691,7 @@ const retriever = context.container.resolve<RetrieverService>("retriever");
 3. 你可以知道失败发生在哪个单元。
 4. 你可以把它暴露给 command 做运行时诊断。
 
-当前示例 `framework/src/example-app/commands/status.command.ts` 就是这样做的。
+当前示例 `framework/src/app/commands/status.command.ts` 就是这样做的。
 
 在成熟系统里，这块还应继续扩展成：
 
@@ -883,7 +883,7 @@ OpenClaw 宿主入口 `src/<app>/index.ts` 只做三件事：
 从架构成熟度来看，下一批值得补的能力是：
 
 1. 多应用支持
-   当前扫描的是单个 `example-app` 根目录。
+   当前扫描的是 `src/app/` 根目录。
 
 2. capability token
    替代字符串容器键，提高类型安全和重构安全。
@@ -958,14 +958,14 @@ OpenClaw 宿主入口 `src/<app>/index.ts` 只做三件事：
 - Host 适配器：`framework/src/framework/openclaw/adapter.ts`
 - 注册表生成脚本：`framework/scripts/generate-registry.mjs`
 - 注册表产物：`framework/src/generated/registry.ts`
-- 插件元数据入口：`framework/src/example-app/plugin.manifest.ts`
-- OpenClaw 宿主入口：`framework/src/example-app/index.ts`
-- 本地演示启动入口：`framework/src/example-app/bootstrap.ts`
-- 最终插件产物根目录：`framework/artifacts/example-app/`
-- 示例 module：`framework/src/example-app/modules/`
-- 示例 tool：`framework/src/example-app/tools/`
-- 示例 hook：`framework/src/example-app/hooks/`
-- 示例 command：`framework/src/example-app/commands/`
+- 插件元数据入口：`framework/src/app/plugin.manifest.ts`
+- OpenClaw 宿主入口：`framework/src/app/index.ts`
+- 本地演示启动入口：`framework/src/app/bootstrap.ts`
+- 最终插件产物根目录：`framework/artifacts/app/`
+- 示例 module：`framework/src/app/modules/`
+- 示例 tool：`framework/src/app/tools/`
+- 示例 hook：`framework/src/app/hooks/`
+- 示例 command：`framework/src/app/commands/`
 
 ---
 

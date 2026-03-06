@@ -294,7 +294,7 @@ commandRegistration: {
 
 ### 3. 示例应用冒烟测试
 
-目标文件：`src/example-app/commands/status.command.ts`
+目标文件：`src/app/commands/status.command.ts`
 
 覆盖点：
 

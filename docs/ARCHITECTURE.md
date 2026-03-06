@@ -62,13 +62,11 @@ This allows:
 The current prototype scans:
 
 ```text
-src/example-app/modules/*.module.ts
-src/example-app/tools/*.tool.ts
-src/example-app/hooks/*.hook.ts
-src/example-app/commands/*.command.ts
+src/app/modules/*.module.ts
+src/app/tools/*.tool.ts
+src/app/hooks/*.hook.ts
+src/app/commands/*.command.ts
 ```
-
-A production version should generalize this into app manifests or package-level app roots.
 
 ## Why Build-Time Registry Wins
 

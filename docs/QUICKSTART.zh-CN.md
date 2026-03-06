@@ -98,21 +98,21 @@ npm run build
 
 对第一次接入的人，最推荐的方式不是从零搭目录，而是参考现成示例：
 
-- `src/example-app/plugin.manifest.ts`
-- `src/example-app/index.ts`
-- `src/example-app/modules/greeter.module.ts`
-- `src/example-app/tools/greet.tool.ts`
-- `src/example-app/hooks/before-agent-start.hook.ts`
-- `src/example-app/commands/status.command.ts`
+- `src/app/plugin.manifest.ts`
+- `src/app/index.ts`
+- `src/app/modules/greeter.module.ts`
+- `src/app/tools/greet.tool.ts`
+- `src/app/hooks/before-agent-start.hook.ts`
+- `src/app/commands/status.command.ts`
 
 最稳妥的上手路径是：
 
-1. 先复制 `src/example-app/` 的目录结构
+1. 直接在 `src/app/` 目录中修改
 2. 修改名称、描述、配置项
 3. 替换里面的业务逻辑
 4. 执行 `npm run build`
 
-如果你不确定某个文件该怎么写，优先对照 `src/example-app/`。
+如果你不确定某个文件该怎么写，优先对照 `src/app/`。
 
 ## 4. 哪些文件需要你写，哪些不要手改
 
@@ -439,7 +439,7 @@ npm run build
 
 ## 8. 最快的验证方法
 
-如果你想确认刚写的定义是不是都注册成功了，最简单的方式是参考 `src/example-app/bootstrap.ts` 做一次本地验证。
+如果你想确认刚写的定义是不是都注册成功了，最简单的方式是参考 `src/app/bootstrap.ts` 做一次本地验证。
 
 它的核心思路是：
 
@@ -517,7 +517,7 @@ console.log(await host.runCommand("framework:status", ["--verbose"]));
 
 如果你希望第一次尽量少踩坑，建议按下面顺序推进：
 
-1. 复制 `src/example-app/` 作为起点
+1. 直接在 `src/app/` 中修改
 2. 先只改 `plugin.manifest.ts` 和 `index.ts`
 3. 再改一个最简单的 `module`
 4. 再接一个 `tool`

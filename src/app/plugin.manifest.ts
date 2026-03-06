@@ -16,13 +16,13 @@ const configSchema = {
 } as const;
 
 export default definePlugin<ExampleAppConfig>({
-  id: "example-app",
-  name: "Example App",
+  id: "app",
+  name: "App",
   version: "0.1.0",
-  description: "Example OpenClaw plugin app built on the convention microkernel prototype.",
+  description: "OpenClaw plugin app built on the convention microkernel framework.",
   configSchema,
   app: {
-    root: "src/example-app",
+    root: "src/app",
     registryPath: "src/generated/registry.ts",
     defaultConfig: {
       environment: "local-prototype",
@@ -30,16 +30,16 @@ export default definePlugin<ExampleAppConfig>({
     },
   },
   package: {
-    packageName: "@dcuplover/openclaw-example-app",
+    packageName: "@dcuplover/openclaw-app",
     private: true,
   },
   build: {
-    entrySource: "src/example-app/index.ts",
+    entrySource: "src/app/index.ts",
     artifactEntry: "./index.js",
     outputDir: "dist",
     registryOutput: "src/generated/registry.ts",
-    artifactRoot: "artifacts/example-app",
-    packageJsonOutput: "artifacts/example-app/package.json",
-    pluginManifestOutput: "artifacts/example-app/openclaw.plugin.json",
+    artifactRoot: "artifacts/app",
+    packageJsonOutput: "artifacts/app/package.json",
+    pluginManifestOutput: "artifacts/app/openclaw.plugin.json",
   },
 });

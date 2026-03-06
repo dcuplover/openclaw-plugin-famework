@@ -77,7 +77,7 @@ flowchart TB
 - 组合多个领域模块
 - 定义默认配置与环境配置来源
 
-你当前的 `src/generated/registry.ts` 和 `src/example-app/bootstrap.ts`，本质上已经处于这一层与微内核之间。
+你当前的 `src/generated/registry.ts` 和 `src/app/bootstrap.ts`，本质上已经处于这一层与微内核之间。
 
 ### 2.4 Microkernel Runtime Layer
 
@@ -126,7 +126,7 @@ flowchart TB
 对应当前实现：
 
 - `src/framework/openclaw/adapter.ts`
-- `src/example-app/mock-host.ts`
+- `src/app/mock-host.ts`
 
 ### 2.7 Build Tooling Layer
 

@@ -4,8 +4,8 @@ import { createRequire } from 'node:module';
 
 const require = createRequire(import.meta.url);
 const { toOpenClawPluginJson, toPackageJsonFields } = require('../dist/framework/plugin/manifest.js');
-const pluginManifest = require('../dist/example-app/plugin.manifest.js').default;
-const entryModule = require('../artifacts/example-app/index.js');
+const pluginManifest = require('../dist/app/plugin.manifest.js').default;
+const entryModule = require('../artifacts/app/index.js');
 
 test('package.json projection includes guide-compatible openclaw.extensions', () => {
   const packageJson = toPackageJsonFields(pluginManifest);
@@ -22,8 +22,8 @@ test('package.json projection includes guide-compatible openclaw.extensions', ()
 test('openclaw.plugin.json projection omits legacy runtime entry fields', () => {
   const openClawPluginJson = toOpenClawPluginJson(pluginManifest);
 
-  assert.equal(openClawPluginJson.id, 'example-app');
-  assert.equal(openClawPluginJson.name, 'Example App');
+  assert.equal(openClawPluginJson.id, 'app');
+  assert.equal(openClawPluginJson.name, 'App');
   assert.equal(openClawPluginJson.version, '0.1.0');
   assert.ok(openClawPluginJson.configSchema);
   assert.equal('runtime' in openClawPluginJson, false);
@@ -56,9 +56,9 @@ test('compiled plugin entry exports a register(api) contract', async () => {
     },
   });
 
-  assert.equal(plugin.id, 'example-app');
-  assert.equal(plugin.name, 'Example App');
+  assert.equal(plugin.id, 'app');
+  assert.equal(plugin.name, 'App');
   assert.equal(typeof plugin.register, 'function');
-  assert.equal(runtime.appId, 'example-app');
+  assert.equal(runtime.appId, 'app');
   assert.ok(events.includes('tool'));
 });

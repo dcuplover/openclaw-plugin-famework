@@ -50,7 +50,7 @@ test('bootstrapMicrokernel registers commands from the registry onto the host', 
   };
 
   const runtime = await bootstrapMicrokernel({
-    appId: 'example-app',
+    appId: 'app',
     config: { environment: 'test' },
     registry,
     host,

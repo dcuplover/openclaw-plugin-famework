@@ -11,7 +11,7 @@ interface ExampleAppConfig {
 
 async function main(): Promise<void> {
   const host = new MockHostAdapter();
-  const logger = createConsoleLogger("example-app");
+  const logger = createConsoleLogger("app");
   const defaultConfig: ExampleAppConfig = pluginManifest.app.defaultConfig ?? {
     environment: "local-prototype",
     greetingPrefix: "Architect-grade hello",
