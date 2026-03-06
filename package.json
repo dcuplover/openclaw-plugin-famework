@@ -1,0 +1,17 @@
+{
+  "name": "@dcuplover/openclaw-microkernel-framework",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Convention-based microkernel framework prototype for the OpenClaw plugin ecosystem",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "generate:registry": "node ./scripts/generate-registry.mjs ./src/example-app ./src/generated/registry.ts",
+    "build": "npm run generate:registry && npx tsc -p tsconfig.json",
+    "demo": "npm run build && node ./dist/example-app/bootstrap.js"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.0",
+    "typescript": "^5.3.3"
+  }
+}
