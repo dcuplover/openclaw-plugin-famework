@@ -54,6 +54,18 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
+/**
+ * OpenClaw expects tool results in MCP-standard format: { content: [{ type, text }] }.
+ * This normalizes arbitrary tool return values into that shape.
+ */
+function normalizeToolResult(result: unknown): { content: Array<{ type: string; text: string }>; details?: unknown } {
+  if (isRecord(result) && Array.isArray(result.content)) {
+    return result as { content: Array<{ type: string; text: string }>; details?: unknown };
+  }
+  const text = typeof result === "string" ? result : JSON.stringify(result, null, 2);
+  return { content: [{ type: "text", text }] };
+}
+
 function normalizeCliArgs(actionArgs: unknown[]): string[] {
   const normalized: string[] = [];
 
@@ -115,13 +127,22 @@ function emitCommandResult(result: unknown, logger?: CliLoggerLike | FrameworkLo
 export function createOpenClawAdapter(api: OpenClawLikeApi, logger?: FrameworkLogger): HostAdapter {
   return {
     registerTool(tool: HostToolRegistration): void {
+      const schema = tool.schema && Object.keys(tool.schema).length > 0
+        ? tool.schema
+        : { type: "object", properties: {} };
+
+      // Use ToolFactory pattern (function) to match OpenClaw's preferred registration style.
       api.registerTool(
-        {
+        (_toolCtx: unknown) => ({
           name: tool.name,
+          label: tool.description,
           description: tool.description,
-          parameters: tool.schema ?? {},
-          execute: async (_toolCallId: string, params: Record<string, unknown>) => tool.execute(params),
-        },
+          parameters: schema,
+          async execute(_toolCallId: string, params: Record<string, unknown>) {
+            const result = await tool.execute(params);
+            return normalizeToolResult(result);
+          },
+        }),
         { name: tool.name }
       );
       logger?.info("Registered OpenClaw tool", { name: tool.name });

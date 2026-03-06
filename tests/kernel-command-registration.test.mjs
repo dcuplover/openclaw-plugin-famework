@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
 
 const require = createRequire(import.meta.url);
-const { bootstrapMicrokernel } = require('../dist/framework/core/kernel.js');
+const { bootstrapMicrokernel } = require('../artifacts/app/framework/core/kernel.js');
 
 test('bootstrapMicrokernel registers commands from the registry onto the host', async () => {
   const registeredCommands = [];

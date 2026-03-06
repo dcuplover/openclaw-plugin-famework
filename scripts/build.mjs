@@ -69,9 +69,7 @@ const registryPath =
   extractStringField(manifestSource, "registryOutput") ??
   "src/generated/registry.ts";
 const outputDir = extractStringField(manifestSource, "outputDir") ?? "artifacts";
-
-// tsc compiles to the directory specified by tsconfig.json outDir (default: dist)
-const compileDir = tsconfig.compilerOptions?.outDir ?? "./dist";
+const pluginId = extractStringField(manifestSource, "id");
 
 if (!appRoot) {
   throw new Error(
@@ -79,12 +77,19 @@ if (!appRoot) {
   );
 }
 
-const resolvedCompileDir = path.resolve(cwd, compileDir);
+if (!pluginId) {
+  throw new Error(
+    "Could not extract id from manifest source. Ensure it uses a string literal."
+  );
+}
+
+// Compile tsc directly into <outputDir>/<pluginId>/ — no intermediate directory.
+const artifactDir = path.resolve(cwd, outputDir, pluginId);
 
 // --- Compute compiled manifest path ---
 const relativeManifestPath = path.relative(tscRootDir, manifestSourcePath);
 const compiledManifestRelative = relativeManifestPath.replace(/\.ts$/, ".js");
-const compiledManifestPath = path.resolve(resolvedCompileDir, compiledManifestRelative);
+const compiledManifestPath = path.resolve(artifactDir, compiledManifestRelative);
 const compiledManifestArg = path.relative(cwd, compiledManifestPath);
 
 function run(label, command) {
@@ -98,34 +103,36 @@ run(
   `node ./scripts/generate-registry.mjs "${appRoot}" "${registryPath}"`
 );
 
-// --- Phase 2: Compile TypeScript (outDir driven by manifest) ---
+// --- Phase 2: Clean previous artifact & compile TypeScript directly to artifact dir ---
+await fs.rm(artifactDir, { recursive: true, force: true });
+const artifactDirRelative = path.relative(cwd, artifactDir);
 run(
-  "Compiling TypeScript",
-  `npx tsc -p tsconfig.json`
+  `Compiling TypeScript → ${artifactDirRelative}/`,
+  `npx tsc -p tsconfig.json --outDir "${artifactDirRelative}"`
 );
 
-// --- Phase 3: Stage plugin artifact ---
-run(
-  "Staging plugin artifact",
-  `node ./scripts/stage-plugin-artifact.mjs "${compiledManifestArg}"`
-);
-
-// --- Phase 4: Sync package.json ---
+// --- Phase 3: Sync package.json (before entry shim overwrites index.js) ---
 run(
   "Syncing package.json",
   `node ./scripts/sync-package-json.mjs "${compiledManifestArg}"`
 );
 
-// --- Phase 5: Generate OpenClaw plugin manifest ---
+// --- Phase 4: Generate OpenClaw plugin manifest ---
 run(
   "Generating OpenClaw plugin manifest",
   `node ./scripts/generate-plugin-manifest.mjs "${compiledManifestArg}"`
 );
 
-// --- Phase 6: Validate plugin ---
+// --- Phase 5: Validate plugin ---
 run(
   "Validating plugin",
   `node ./scripts/validate-plugin.mjs "${compiledManifestArg}"`
 );
 
-console.log(`\nBuild complete. Compiled manifest: ${compiledManifestArg}`);
+// --- Phase 6: Create entry shims (replaces framework barrel with app entry) ---
+run(
+  "Creating entry shims",
+  `node ./scripts/stage-plugin-artifact.mjs "${compiledManifestArg}"`
+);
+
+console.log(`\nBuild complete. Artifact: ${artifactDirRelative}/`);

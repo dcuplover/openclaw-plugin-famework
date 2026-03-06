@@ -3,8 +3,8 @@ import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
 
 const require = createRequire(import.meta.url);
-const { toOpenClawPluginJson, toPackageJsonFields } = require('../dist/framework/plugin/manifest.js');
-const pluginManifest = require('../dist/app/plugin.manifest.js').default;
+const { toOpenClawPluginJson, toPackageJsonFields } = require('../artifacts/app/framework/plugin/manifest.js');
+const pluginManifest = require('../artifacts/app/app/plugin.manifest.js').default;
 const entryModule = require('../artifacts/app/index.js');
 
 test('package.json projection includes guide-compatible openclaw.extensions', () => {

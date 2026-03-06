@@ -1,11 +1,18 @@
+/**
+ * Creates entry shim files for the plugin artifact.
+ * Assumes tsc has already compiled directly into the artifact directory.
+ *
+ * Usage: node stage-plugin-artifact.mjs <compiled-manifest-module>
+ */
+
 import { createRequire } from "node:module";
 import { promises as fs } from "node:fs";
 import path from "node:path";
 
-const [, , manifestModuleArg, artifactRootArg] = process.argv;
+const [, , manifestModuleArg] = process.argv;
 
 if (!manifestModuleArg) {
-  console.error("Usage: node stage-plugin-artifact.mjs <compiled-manifest-module> [artifact-root]");
+  console.error("Usage: node stage-plugin-artifact.mjs <compiled-manifest-module>");
   process.exit(1);
 }
 
@@ -20,39 +27,13 @@ if (!pluginManifest || typeof pluginManifest !== "object") {
 }
 
 const compiledAppDir = path.dirname(manifestModulePath);
-const compiledRootDir = path.resolve(compiledAppDir, "..");
+const artifactRoot = path.resolve(compiledAppDir, "..");
 const entryPath = pluginManifest.build?.artifactEntry ?? "./index.js";
 const compiledAppDirName = path.basename(compiledAppDir);
 
 if (typeof entryPath !== "string" || entryPath.length === 0) {
-  throw new Error("Plugin manifest must declare build.artifactEntry before staging artifacts.");
+  throw new Error("Plugin manifest must declare build.artifactEntry before creating entry shims.");
 }
-
-const artifactRoot = path.resolve(
-  cwd,
-  artifactRootArg ?? pluginManifest.build?.artifactRoot ?? path.join(pluginManifest.build?.outputDir ?? "artifacts", pluginManifest.id)
-);
-
-if (path.basename(artifactRoot) !== pluginManifest.id) {
-  throw new Error(
-    `Artifact root basename must match plugin id. Expected "${pluginManifest.id}", got "${path.basename(artifactRoot)}".`
-  );
-}
-
-const copyPlan = [
-  {
-    source: path.join(compiledRootDir, "framework"),
-    target: path.join(artifactRoot, "framework"),
-  },
-  {
-    source: path.join(compiledRootDir, "generated"),
-    target: path.join(artifactRoot, "generated"),
-  },
-  {
-    source: compiledAppDir,
-    target: path.join(artifactRoot, compiledAppDirName),
-  },
-];
 
 function toCompiledRuntimePath(entrySource) {
   const entryFileName = path.basename(entrySource ?? "index.ts");
@@ -75,13 +56,6 @@ function toPosixRelative(fromPath, toPath, keepExtension = true) {
   }
 
   return relativePath;
-}
-
-await fs.rm(artifactRoot, { recursive: true, force: true });
-await fs.mkdir(artifactRoot, { recursive: true });
-
-for (const { source, target } of copyPlan) {
-  await fs.cp(source, target, { recursive: true });
 }
 
 const normalizedEntryPath = entryPath.replace(/^\.\//, "");
@@ -116,4 +90,4 @@ await fs.writeFile(
   "utf8"
 );
 
-console.log(`Staged plugin artifact at ${artifactRoot}`);
+console.log(`Created entry shims at ${artifactRoot}`);
