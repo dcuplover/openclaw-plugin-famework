@@ -80,6 +80,16 @@ Compared with runtime scanning, build-time generation provides:
 - earlier validation failures
 - safer host deployment
 
+## Packaging Boundary
+
+This prototype now treats compiled code and installable plugin artifacts as separate concerns.
+
+- `dist/` is the TypeScript compiler output and internal runtime build cache.
+- `artifacts/<plugin-id>/` is the host-facing plugin root used by OpenClaw loading.
+- The artifact directory basename should match `PluginManifest.id` so host path loading and plugin identity do not drift.
+
+That boundary avoids the common confusion where a generic folder like `dist/` is accidentally treated as the plugin's public root.
+
 ## Future Evolution
 
 1. Add manifest-driven multi-app support.

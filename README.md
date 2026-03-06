@@ -8,7 +8,7 @@ A standalone prototype of a convention-based microkernel framework for the OpenC
 - First-class contracts for modules, tools, hooks, and commands.
 - A first-class plugin manifest contract via `definePlugin()`.
 - A build-time registry generator for convention-based discovery.
-- A build-time plugin manifest generator for plugin artifacts under `dist/example-app/`.
+- A build-time plugin manifest generator for plugin artifacts under `artifacts/example-app/`.
 - A package metadata sync step driven from `PluginManifest`.
 - A validation step that checks plugin artifacts stay aligned with `PluginManifest`.
 - A thin example plugin entrypoint at `src/example-app/index.ts` for OpenClaw host loading.
@@ -42,7 +42,9 @@ npm run build
 npm run demo
 ```
 
-`npm run build` now generates `src/generated/registry.ts`, writes `dist/example-app/package.json`, writes `dist/example-app/openclaw.plugin.json`, and validates that the plugin artifacts stay aligned with `PluginManifest`.
+`npm run build` now generates `src/generated/registry.ts`, compiles runtime code into `dist/`, stages a loadable plugin tree under `artifacts/example-app/`, writes `artifacts/example-app/package.json`, writes `artifacts/example-app/openclaw.plugin.json`, and validates that the plugin artifacts stay aligned with `PluginManifest`.
+
+Use `artifacts/example-app/` as the plugin root for `plugins.load.paths` or local installation. The `dist/` folder is now treated as compile output only.
 
 ## Documentation
 
@@ -104,8 +106,8 @@ npm run validate:plugin
 
 It compares:
 
-- `PluginManifest -> dist/example-app/package.json`
-- `PluginManifest -> dist/example-app/openclaw.plugin.json`
+- `PluginManifest -> artifacts/example-app/package.json`
+- `PluginManifest -> artifacts/example-app/openclaw.plugin.json`
 
 If any field drifts, the script exits non-zero and prints the mismatched field names with actual vs expected values.
 

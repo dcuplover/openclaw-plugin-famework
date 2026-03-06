@@ -18,6 +18,7 @@ export interface PluginBuildManifest {
   entrySource?: string;
   outputDir?: string;
   registryOutput?: string;
+  artifactRoot?: string;
   packageJsonOutput?: string;
   pluginManifestOutput?: string;
 }
