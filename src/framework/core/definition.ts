@@ -1,4 +1,5 @@
 import type {
+  CliDefinition,
   CommandDefinition,
   HookDefinition,
   ModuleDefinition,
@@ -20,6 +21,12 @@ export function defineTool<TConfig = unknown>(
 export function defineHook<TConfig = unknown>(
   definition: HookDefinition<TConfig>
 ): HookDefinition<TConfig> {
+  return definition;
+}
+
+export function defineCli<TConfig = unknown>(
+  definition: CliDefinition<TConfig>
+): CliDefinition<TConfig> {
   return definition;
 }
 

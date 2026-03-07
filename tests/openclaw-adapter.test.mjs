@@ -5,7 +5,7 @@ import { createRequire } from 'node:module';
 const require = createRequire(import.meta.url);
 const { createOpenClawAdapter } = require('../artifacts/app/framework/openclaw/adapter.js');
 
-test('registerCommand wires OpenClaw CLI through program.command()', async () => {
+test('registerCli wires OpenClaw CLI through program.command()', async () => {
   const events = [];
   let capturedAction;
 
@@ -38,12 +38,13 @@ test('registerCommand wires OpenClaw CLI through program.command()', async () =>
         },
       });
     },
+    registerCommand() {},
   };
 
   const adapter = createOpenClawAdapter(api);
-  adapter.registerCommand({
+  adapter.registerCli({
     name: 'demo',
-    description: 'Demo command',
+    description: 'Demo CLI',
     async execute() {
       return undefined;
     },
@@ -52,13 +53,13 @@ test('registerCommand wires OpenClaw CLI through program.command()', async () =>
   assert.deepEqual(events, [
     ['registerCli', { commands: ['demo'] }],
     ['command', 'demo'],
-    ['description', 'Demo command'],
+    ['description', 'Demo CLI'],
     ['action'],
   ]);
   assert.equal(typeof capturedAction, 'function');
 });
 
-test('command action normalizes args and emits result text', async () => {
+test('CLI action normalizes args and emits result text', async () => {
   const logs = [];
   let capturedAction;
   let receivedArgs;
@@ -90,12 +91,13 @@ test('command action normalizes args and emits result text', async () => {
         },
       });
     },
+    registerCommand() {},
   };
 
   const adapter = createOpenClawAdapter(api);
-  adapter.registerCommand({
+  adapter.registerCli({
     name: 'demo',
-    description: 'Demo command',
+    description: 'Demo CLI',
     async execute(args) {
       receivedArgs = args;
       return { content: [{ type: 'text', text: 'ok' }] };
@@ -106,6 +108,39 @@ test('command action normalizes args and emits result text', async () => {
 
   assert.deepEqual(receivedArgs, ['Alice', '--verbose', '--count', '2']);
   assert.deepEqual(logs, ['ok']);
+});
+
+test('registerCommand wires OpenClaw registerCommand with name, description, and handler', async () => {
+  let capturedDefinition;
+
+  const api = {
+    registerTool() {},
+    on() {},
+    registerCli() {},
+    registerCommand(definition) {
+      capturedDefinition = definition;
+    },
+  };
+
+  const adapter = createOpenClawAdapter(api);
+  adapter.registerCommand({
+    name: 'hello',
+    description: 'Reply hello',
+    acceptsArgs: true,
+    requireAuth: false,
+    async handler() {
+      return { text: 'hello' };
+    },
+  });
+
+  assert.equal(capturedDefinition.name, 'hello');
+  assert.equal(capturedDefinition.description, 'Reply hello');
+  assert.equal(capturedDefinition.acceptsArgs, true);
+  assert.equal(capturedDefinition.requireAuth, false);
+  assert.equal(typeof capturedDefinition.handler, 'function');
+
+  const result = await capturedDefinition.handler();
+  assert.deepEqual(result, { text: 'hello' });
 });
 
 test('registerTool uses factory pattern and normalizes plain results to content format', async () => {
@@ -119,6 +154,7 @@ test('registerTool uses factory pattern and normalizes plain results to content 
     },
     on() {},
     registerCli() {},
+    registerCommand() {},
   };
 
   const adapter = createOpenClawAdapter(api);
@@ -156,6 +192,7 @@ test('registerTool passes through results already in content format', async () =
     registerTool(factory) { capturedFactory = factory; },
     on() {},
     registerCli() {},
+    registerCommand() {},
   };
 
   const adapter = createOpenClawAdapter(api);
@@ -181,6 +218,7 @@ test('registerTool uses fallback schema when none provided', async () => {
     registerTool(factory) { capturedFactory = factory; },
     on() {},
     registerCli() {},
+    registerCommand() {},
   };
 
   const adapter = createOpenClawAdapter(api);

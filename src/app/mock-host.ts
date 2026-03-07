@@ -1,5 +1,6 @@
 import type {
   HostAdapter,
+  HostCliRegistration,
   HostCommandRegistration,
   HostHookRegistration,
   HostToolRegistration,
@@ -7,6 +8,7 @@ import type {
 
 export class MockHostAdapter implements HostAdapter {
   private readonly tools = new Map<string, HostToolRegistration>();
+  private readonly clis = new Map<string, HostCliRegistration>();
   private readonly commands = new Map<string, HostCommandRegistration>();
   private readonly hooks = new Map<string, HostHookRegistration[]>();
 
@@ -19,6 +21,10 @@ export class MockHostAdapter implements HostAdapter {
     hooks.push(hook);
     hooks.sort((left, right) => right.priority - left.priority);
     this.hooks.set(hook.event, hooks);
+  }
+
+  registerCli(cli: HostCliRegistration): void {
+    this.clis.set(cli.name, cli);
   }
 
   registerCommand(command: HostCommandRegistration): void {
@@ -40,11 +46,19 @@ export class MockHostAdapter implements HostAdapter {
     return tool.execute(params);
   }
 
-  async runCommand(name: string, args: string[]): Promise<unknown> {
+  async runCli(name: string, args: string[]): Promise<unknown> {
+    const cli = this.clis.get(name);
+    if (!cli) {
+      throw new Error(`CLI not found: ${name}`);
+    }
+    return cli.execute(args);
+  }
+
+  async runCommand(name: string, args?: string): Promise<{ text: string }> {
     const command = this.commands.get(name);
     if (!command) {
       throw new Error(`Command not found: ${name}`);
     }
-    return command.execute(args);
+    return command.handler(args);
   }
 }

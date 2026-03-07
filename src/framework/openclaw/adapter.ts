@@ -1,6 +1,7 @@
 import type {
   FrameworkLogger,
   HostAdapter,
+  HostCliRegistration,
   HostCommandRegistration,
   HostHookRegistration,
   HostToolRegistration,
@@ -29,6 +30,13 @@ export interface OpenClawCliContext {
 export interface OpenClawLikeApi {
   registerTool(definition: unknown, meta?: unknown): void;
   registerCli(factory: (context: OpenClawCliContext) => void, meta?: { commands?: string[] }): void;
+  registerCommand(definition: {
+    name: string;
+    description?: string;
+    acceptsArgs?: boolean;
+    requireAuth?: boolean;
+    handler: (args?: string) => Promise<{ text: string }> | { text: string };
+  }): void;
   on(event: string, handler: (payload: unknown) => Promise<void> | void): void;
   pluginConfig?: Record<string, unknown>;
   logger?: {
@@ -151,20 +159,30 @@ export function createOpenClawAdapter(api: OpenClawLikeApi, logger?: FrameworkLo
       api.on(hook.event, hook.handler);
       logger?.info("Registered OpenClaw hook", { event: hook.event, priority: hook.priority });
     },
-    registerCommand(command: HostCommandRegistration): void {
+    registerCli(cli: HostCliRegistration): void {
       api.registerCli(
         ({ program, logger: cliLogger }) => {
           program
-            .command(command.name)
-            .description(command.description)
+            .command(cli.name)
+            .description(cli.description)
             .action(async (...actionArgs: unknown[]) => {
               const normalizedArgs = normalizeCliArgs(actionArgs);
-              const result = await command.execute(normalizedArgs);
+              const result = await cli.execute(normalizedArgs);
               emitCommandResult(result, cliLogger ?? logger);
             });
         },
-        { commands: [command.name] }
+        { commands: [cli.name] }
       );
+      logger?.info("Registered OpenClaw CLI", { name: cli.name });
+    },
+    registerCommand(command: HostCommandRegistration): void {
+      api.registerCommand({
+        name: command.name,
+        description: command.description,
+        acceptsArgs: command.acceptsArgs,
+        requireAuth: command.requireAuth,
+        handler: async (args) => command.handler(args),
+      });
       logger?.info("Registered OpenClaw command", { name: command.name });
     },
   };

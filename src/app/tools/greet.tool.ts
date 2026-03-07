@@ -18,8 +18,8 @@ export default defineTool({
     const name = typeof params.name === "string" ? params.name : "world";
 
     return {
-      ok: true,
-      message: greeter.greet(name),
+      type: "text",
+      text: greeter.greet(name),
     };
   },
 });

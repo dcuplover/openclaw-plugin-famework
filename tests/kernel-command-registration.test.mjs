@@ -5,14 +5,15 @@ import { createRequire } from 'node:module';
 const require = createRequire(import.meta.url);
 const { bootstrapMicrokernel } = require('../artifacts/app/framework/core/kernel.js');
 
-test('bootstrapMicrokernel registers commands from the registry onto the host', async () => {
-  const registeredCommands = [];
+test('bootstrapMicrokernel registers CLIs from the registry onto the host', async () => {
+  const registeredClis = [];
   const host = {
     registerTool() {},
     registerHook() {},
-    registerCommand(command) {
-      registeredCommands.push(command);
+    registerCli(cli) {
+      registeredClis.push(cli);
     },
+    registerCommand() {},
   };
 
   const loggerMessages = [];
@@ -32,21 +33,22 @@ test('bootstrapMicrokernel registers commands from the registry onto the host', 
     modules: [],
     tools: [],
     hooks: [],
-    commands: [
+    clis: [
       async () => ({
-        kind: 'command',
+        kind: 'cli',
         name: 'framework:status',
         description: 'Return boot state',
         async execute(args, context) {
           return {
             args,
-            appId: context.diagnostics.loadedCommands[0],
+            appId: context.diagnostics.loadedClis[0],
             configEnvironment: context.config.environment,
             serviceKeys: context.container.entries().map(([key]) => key),
           };
         },
       }),
     ],
+    commands: [],
   };
 
   const runtime = await bootstrapMicrokernel({
@@ -57,12 +59,12 @@ test('bootstrapMicrokernel registers commands from the registry onto the host', 
     logger,
   });
 
-  assert.equal(registeredCommands.length, 1);
-  assert.equal(registeredCommands[0].name, 'framework:status');
-  assert.equal(registeredCommands[0].description, 'Return boot state');
-  assert.deepEqual(runtime.diagnostics.loadedCommands, ['framework:status']);
+  assert.equal(registeredClis.length, 1);
+  assert.equal(registeredClis[0].name, 'framework:status');
+  assert.equal(registeredClis[0].description, 'Return boot state');
+  assert.deepEqual(runtime.diagnostics.loadedClis, ['framework:status']);
 
-  const result = await registeredCommands[0].execute(['--verbose']);
+  const result = await registeredClis[0].execute(['--verbose']);
 
   assert.deepEqual(result, {
     args: ['--verbose'],
@@ -75,6 +77,59 @@ test('bootstrapMicrokernel registers commands from the registry onto the host', 
     loggerMessages.some(([level, message]) => level === 'info' && message === 'Microkernel boot complete'),
     true
   );
+
+  await runtime.shutdown();
+});
+
+test('bootstrapMicrokernel registers commands from the registry onto the host', async () => {
+  const registeredCommands = [];
+  const host = {
+    registerTool() {},
+    registerHook() {},
+    registerCli() {},
+    registerCommand(command) {
+      registeredCommands.push(command);
+    },
+  };
+
+  const logger = {
+    info() {},
+    warn() {},
+    error() {},
+  };
+
+  const registry = {
+    modules: [],
+    tools: [],
+    hooks: [],
+    clis: [],
+    commands: [
+      async () => ({
+        kind: 'command',
+        name: 'hello',
+        description: 'Reply hello',
+        handler: async () => {
+          return { text: 'hello' };
+        },
+      }),
+    ],
+  };
+
+  const runtime = await bootstrapMicrokernel({
+    appId: 'app',
+    config: {},
+    registry,
+    host,
+    logger,
+  });
+
+  assert.equal(registeredCommands.length, 1);
+  assert.equal(registeredCommands[0].name, 'hello');
+  assert.equal(registeredCommands[0].description, 'Reply hello');
+  assert.deepEqual(runtime.diagnostics.loadedCommands, ['hello']);
+
+  const result = await registeredCommands[0].handler();
+  assert.deepEqual(result, { text: 'hello' });
 
   await runtime.shutdown();
 });

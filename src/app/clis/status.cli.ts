@@ -1,8 +1,8 @@
-import { defineCommand } from "../../framework/core/definition";
+import { defineCli } from "../../framework/core/definition";
 import type { SessionState } from "../modules/session.module";
 
-export default defineCommand({
-  kind: "command",
+export default defineCli({
+  kind: "cli",
   name: "framework:status",
   description: "Print runtime diagnostics for the convention microkernel.",
   execute(_args, context) {

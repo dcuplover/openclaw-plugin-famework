@@ -11,6 +11,7 @@ export interface KernelDiagnostics {
   loadedModules: string[];
   loadedTools: string[];
   loadedHooks: string[];
+  loadedClis: string[];
   loadedCommands: string[];
   timings: Record<string, number>;
   failures: Array<{ unit: string; reason: string }>;
@@ -37,15 +38,24 @@ export interface HostHookRegistration {
   priority: number;
 }
 
-export interface HostCommandRegistration {
+export interface HostCliRegistration {
   name: string;
   description: string;
   execute: (args: string[]) => Promise<unknown>;
 }
 
+export interface HostCommandRegistration {
+  name: string;
+  description: string;
+  acceptsArgs?: boolean;
+  requireAuth?: boolean;
+  handler: (args?: string) => Promise<{ text: string }>;
+}
+
 export interface HostAdapter {
   registerTool(tool: HostToolRegistration): Promise<void> | void;
   registerHook(hook: HostHookRegistration): Promise<void> | void;
+  registerCli(cli: HostCliRegistration): Promise<void> | void;
   registerCommand(command: HostCommandRegistration): Promise<void> | void;
 }
 
@@ -60,7 +70,7 @@ export interface ModuleContext<TConfig = unknown> {
 export interface RuntimeContext<TConfig = unknown> extends ModuleContext<TConfig> {}
 
 export interface BaseDefinition {
-  kind: "module" | "tool" | "hook" | "command";
+  kind: "module" | "tool" | "hook" | "cli" | "command";
   name: string;
   description?: string;
   priority?: number;
@@ -92,16 +102,28 @@ export interface HookDefinition<TConfig = unknown> extends BaseDefinition {
   handle: (payload: unknown, context: RuntimeContext<TConfig>) => Promise<void> | void;
 }
 
+export interface CliDefinition<TConfig = unknown> extends BaseDefinition {
+  kind: "cli";
+  description: string;
+  execute: (args: string[], context: RuntimeContext<TConfig>) => Promise<unknown> | unknown;
+}
+
 export interface CommandDefinition<TConfig = unknown> extends BaseDefinition {
   kind: "command";
   description: string;
-  execute: (args: string[], context: RuntimeContext<TConfig>) => Promise<unknown> | unknown;
+  acceptsArgs?: boolean;
+  requireAuth?: boolean;
+  handler: (
+    args: string | undefined,
+    context: RuntimeContext<TConfig>
+  ) => Promise<{ text: string }> | { text: string };
 }
 
 export type AnyDefinition<TConfig = unknown> =
   | ModuleDefinition<TConfig>
   | ToolDefinition<TConfig>
   | HookDefinition<TConfig>
+  | CliDefinition<TConfig>
   | CommandDefinition<TConfig>;
 
 export type DefinitionLoader<T> = () => Promise<T | { default: T }>;
@@ -110,6 +132,7 @@ export interface DefinitionRegistry<TConfig = unknown> {
   modules: Array<DefinitionLoader<ModuleDefinition<TConfig>>>;
   tools: Array<DefinitionLoader<ToolDefinition<TConfig>>>;
   hooks: Array<DefinitionLoader<HookDefinition<TConfig>>>;
+  clis: Array<DefinitionLoader<CliDefinition<TConfig>>>;
   commands: Array<DefinitionLoader<CommandDefinition<TConfig>>>;
 }
 

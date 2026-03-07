@@ -3,6 +3,7 @@ import { createConsoleLogger } from "./logger";
 import { loadDefinitions } from "./registry";
 import type {
   BootstrapOptions,
+  CliDefinition,
   CommandDefinition,
   HookDefinition,
   KernelDiagnostics,
@@ -18,6 +19,7 @@ function createDiagnostics(): KernelDiagnostics {
     loadedModules: [],
     loadedTools: [],
     loadedHooks: [],
+    loadedClis: [],
     loadedCommands: [],
     timings: {},
     failures: [],
@@ -95,6 +97,21 @@ async function registerHooks<TConfig>(
   }
 }
 
+async function registerClis<TConfig>(
+  definitions: CliDefinition<TConfig>[],
+  context: RuntimeContext<TConfig>
+): Promise<void> {
+  const ordered = [...definitions].sort((left, right) => left.name.localeCompare(right.name));
+  for (const definition of ordered) {
+    await context.host.registerCli({
+      name: definition.name,
+      description: definition.description,
+      execute: async (args) => definition.execute(args, context),
+    });
+    context.diagnostics.loadedClis.push(definition.name);
+  }
+}
+
 async function registerCommands<TConfig>(
   definitions: CommandDefinition<TConfig>[],
   context: RuntimeContext<TConfig>
@@ -104,7 +121,9 @@ async function registerCommands<TConfig>(
     await context.host.registerCommand({
       name: definition.name,
       description: definition.description,
-      execute: async (args) => definition.execute(args, context),
+      acceptsArgs: definition.acceptsArgs,
+      requireAuth: definition.requireAuth,
+      handler: async (args) => definition.handler(args, context),
     });
     context.diagnostics.loadedCommands.push(definition.name);
   }
@@ -140,6 +159,7 @@ export async function bootstrapMicrokernel<TConfig>(
   const moduleDefinitions = topologicalSort(await loadDefinitions(options.registry.modules));
   const toolDefinitions = await loadDefinitions(options.registry.tools);
   const hookDefinitions = await loadDefinitions(options.registry.hooks);
+  const cliDefinitions = await loadDefinitions(options.registry.clis);
   const commandDefinitions = await loadDefinitions(options.registry.commands);
 
   for (const moduleDefinition of moduleDefinitions) {
@@ -167,6 +187,10 @@ export async function bootstrapMicrokernel<TConfig>(
     await registerHooks(hookDefinitions, context);
   });
 
+  await startTimed("clis:register", async () => {
+    await registerClis(cliDefinitions, context);
+  });
+
   await startTimed("commands:register", async () => {
     await registerCommands(commandDefinitions, context);
   });
@@ -176,6 +200,7 @@ export async function bootstrapMicrokernel<TConfig>(
     modules: diagnostics.loadedModules.length,
     tools: diagnostics.loadedTools.length,
     hooks: diagnostics.loadedHooks.length,
+    clis: diagnostics.loadedClis.length,
     commands: diagnostics.loadedCommands.length,
   });
 

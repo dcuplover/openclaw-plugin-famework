@@ -46,6 +46,9 @@ test('compiled plugin entry exports a register(api) contract', async () => {
     registerCli() {
       events.push('cli');
     },
+    registerCommand() {
+      events.push('command');
+    },
     on() {
       events.push('hook');
     },

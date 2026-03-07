@@ -16,6 +16,7 @@ const groups = [
   { key: "modules", directory: "modules", suffix: ".module.ts" },
   { key: "tools", directory: "tools", suffix: ".tool.ts" },
   { key: "hooks", directory: "hooks", suffix: ".hook.ts" },
+  { key: "clis", directory: "clis", suffix: ".cli.ts" },
   { key: "commands", directory: "commands", suffix: ".command.ts" },
 ];
 

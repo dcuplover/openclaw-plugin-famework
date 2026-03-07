@@ -12,7 +12,10 @@ export const registry: DefinitionRegistry = {
   hooks: [
   () => import("../app/hooks/before-agent-start.hook"),
   ],
+  clis: [
+  () => import("../app/clis/status.cli"),
+  ],
   commands: [
-  () => import("../app/commands/status.command"),
+  () => import("../app/commands/hello.command"),
   ],
 };
