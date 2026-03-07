@@ -5,6 +5,6 @@ export default defineCommand({
   name: "hello",
   description: "Reply hello",
   handler(_args, _context) {
-    return { text: "hello" };
+    return { text: "hello this is a test" };
   },
 });
