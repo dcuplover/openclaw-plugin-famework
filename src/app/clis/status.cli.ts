@@ -1,12 +1,15 @@
 import { defineCli } from "../../framework/core/definition";
 import type {
-  FrameworkLogger,
-  HostAdapter,
   KernelRuntime,
   RuntimeContext,
 } from "../../framework/core/types";
-import type { OpenClawCliContext, OpenClawCliProgramLike } from "../../framework/openclaw/adapter";
 import type { SessionState } from "../modules/session.module";
+import {
+  emitCliJson,
+  registerCliGroup,
+  type AppCliGroupDefinition,
+  type AppCliRegistrationParams,
+} from "./shared";
 
 export const frameworkCliName = "framework";
 export const frameworkStatusSubcommandName = "status";
@@ -19,33 +22,24 @@ type StatusCliResult = {
   beforeAgentStartCount: number;
 };
 
-function createStatusCliResult(context: Pick<RuntimeContext, "container" | "diagnostics">): StatusCliResult {
-  const sessionState = context.container.resolve<SessionState>("sessionState");
+type StatusSnapshotSource = Pick<KernelRuntime, "container" | "diagnostics">;
+
+function readSessionState(source: StatusSnapshotSource): SessionState {
+  return source.container.resolve<SessionState>("sessionState");
+}
+
+function listRegisteredServices(source: StatusSnapshotSource): string[] {
+  return source.container.entries().map(([key]) => key);
+}
+
+function createStatusCliResult(source: StatusSnapshotSource): StatusCliResult {
+  const sessionState = readSessionState(source);
 
   return {
-    diagnostics: context.diagnostics,
-    services: context.container.entries().map(([key]) => key),
+    diagnostics: source.diagnostics,
+    services: listRegisteredServices(source),
     beforeAgentStartCount: sessionState.beforeAgentStartCount,
   };
-}
-
-function createRuntimeContext(runtime: KernelRuntime): RuntimeContext {
-  return {
-    config: runtime.container.resolve("config"),
-    container: runtime.container,
-    diagnostics: runtime.diagnostics,
-    logger: runtime.container.resolve<FrameworkLogger>("logger"),
-    host: runtime.container.resolve<HostAdapter>("host"),
-  };
-}
-
-function emitStatusCliResult(result: StatusCliResult, logger?: OpenClawCliContext["logger"]): void {
-  const text = JSON.stringify(result, null, 2);
-  if (logger?.info) {
-    logger.info(text);
-    return;
-  }
-  console.log(text);
 }
 
 function executeFrameworkCli(args: string[], context: RuntimeContext): StatusCliResult {
@@ -58,22 +52,29 @@ function executeFrameworkCli(args: string[], context: RuntimeContext): StatusCli
   throw new Error(`Unknown CLI subcommand: ${subcommand}`);
 }
 
-export function registerStatusCli(params: {
-  program: OpenClawCliProgramLike;
+async function runRegisteredStatusCli(params: {
   ensureRuntime: () => Promise<KernelRuntime>;
-  logger?: OpenClawCliContext["logger"];
-}): void {
-  const root = params.program.command(frameworkCliName).description(frameworkCliDescription);
+  logger?: AppCliRegistrationParams["logger"];
+}): Promise<void> {
+  const runtime = await params.ensureRuntime();
+  const result = createStatusCliResult(runtime);
+  emitCliJson(result, params.logger);
+}
 
-  root
-    .command(frameworkStatusSubcommandName)
-    .description(statusCliDescription)
-    .action(async () => {
-      const runtime = await params.ensureRuntime();
-      const context = createRuntimeContext(runtime);
-      const result = createStatusCliResult(context);
-      emitStatusCliResult(result, params.logger);
-    });
+const frameworkCliRegistration: AppCliGroupDefinition = {
+  name: frameworkCliName,
+  description: frameworkCliDescription,
+  subcommands: [
+    {
+      name: frameworkStatusSubcommandName,
+      description: statusCliDescription,
+      action: runRegisteredStatusCli,
+    },
+  ],
+};
+
+export function registerStatusCli(params: AppCliRegistrationParams): void {
+  registerCliGroup(params, frameworkCliRegistration);
 }
 
 const statusCli = defineCli({

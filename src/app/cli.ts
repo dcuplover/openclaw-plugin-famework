@@ -1,13 +1,13 @@
-import type { KernelRuntime } from "../framework/core/types";
-import type { OpenClawCliContext, OpenClawCliProgramLike } from "../framework/openclaw/adapter";
-import statusCli, { registerStatusCli } from "./clis/status.cli";
+import {
+  appCliCommands,
+  appCliRegistrars,
+  type AppCliRegistrationParams,
+} from "./clis";
 
-export const appCliCommands = [statusCli.name];
+export { appCliCommands };
 
-export function registerAppCli(params: {
-  program: OpenClawCliProgramLike;
-  ensureRuntime: () => Promise<KernelRuntime>;
-  logger?: OpenClawCliContext["logger"];
-}): void {
-  registerStatusCli(params);
+export function registerAppCli(params: AppCliRegistrationParams): void {
+  for (const registerCli of appCliRegistrars) {
+    registerCli(params);
+  }
 }
