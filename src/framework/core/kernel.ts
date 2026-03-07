@@ -4,6 +4,7 @@ import { loadDefinitions } from "./registry";
 import type {
   BootstrapOptions,
   CliDefinition,
+  CommandInvocationContext,
   CommandDefinition,
   HookDefinition,
   KernelDiagnostics,
@@ -87,6 +88,8 @@ async function registerHooks<TConfig>(
   const ordered = [...definitions].sort((left, right) => (right.priority ?? 0) - (left.priority ?? 0));
   for (const definition of ordered) {
     await context.host.registerHook({
+      name: definition.name,
+      description: definition.description,
       event: definition.event,
       priority: definition.priority ?? 0,
       handler: async (payload) => {
@@ -123,7 +126,14 @@ async function registerCommands<TConfig>(
       description: definition.description,
       acceptsArgs: definition.acceptsArgs,
       requireAuth: definition.requireAuth,
-      handler: async (args) => definition.handler(args, context),
+      handler: async (commandContext) => {
+        const normalizedCommandContext: CommandInvocationContext<TConfig> = {
+          ...commandContext,
+          args: commandContext?.args,
+          config: context.config,
+        };
+        return definition.handler(normalizedCommandContext, context);
+      },
     });
     context.diagnostics.loadedCommands.push(definition.name);
   }

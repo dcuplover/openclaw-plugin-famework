@@ -5,7 +5,7 @@ A standalone prototype of a convention-based microkernel framework for the OpenC
 ## What this folder contains
 
 - A microkernel with dependency injection and lifecycle orchestration.
-- First-class contracts for modules, tools, hooks, and commands.
+- First-class contracts for modules, tools, hooks, chat commands, and CLIs.
 - A first-class plugin manifest contract via `definePlugin()`.
 - A build-time registry generator for convention-based discovery.
 - A build-time plugin manifest generator for plugin artifacts under `artifacts/app/`.
@@ -29,6 +29,7 @@ src/app/
   modules/*.module.ts
   tools/*.tool.ts
   hooks/*.hook.ts
+  clis/*.cli.ts
   commands/*.command.ts
 ```
 
@@ -49,7 +50,7 @@ Use `artifacts/app/` as the plugin root for `plugins.load.paths` or local instal
 ## Documentation
 
 - `README.md`: quick project overview
-- `docs/QUICKSTART.zh-CN.md`: fast path for registering module / tool / hook / CLI command
+- `docs/QUICKSTART.zh-CN.md`: fast path for registering module / tool / hook / chat command / CLI
 - `docs/ARCHITECTURE.md`: architectural rationale and evolution direction
 - `docs/USAGE_GUIDE.zh-CN.md`: detailed framework usage guide in Chinese
 
@@ -59,6 +60,7 @@ Use `artifacts/app/` as the plugin root for `plugins.load.paths` or local instal
 - `defineTool()`
 - `defineHook()`
 - `defineCommand()`
+- `defineCli()`
 - `definePlugin()`
 - `PluginManifest`
 - `toOpenClawPluginJson()`
@@ -90,14 +92,33 @@ The framework now includes a plugin manifest layer in addition to runtime defini
 The host-facing shape is intentionally thin:
 
 ```ts
+const registryWithoutClis = { ...registry, clis: [] as typeof registry.clis };
+const openClawPluginEntrypoint = bootstrapOpenClawPlugin(pluginManifest, registryWithoutClis);
+
 export default {
   id: pluginManifest.id,
+  name: pluginManifest.name,
+  description: pluginManifest.description,
+  version: pluginManifest.version,
   configSchema: pluginManifest.configSchema,
-  async register(api) {
-    return bootstrapOpenClawPlugin(pluginManifest, registry)({
+  register(api) {
+    const runtimePromise = openClawPluginEntrypoint({
       api,
       config: api.pluginConfig,
     });
+
+    let runtime = null;
+    const ensureRuntime = async () => {
+      if (runtime) return runtime;
+      runtime = await runtimePromise;
+      return runtime;
+    };
+
+    api.registerCli(({ program, logger }) => {
+      registerAppCli({ program, ensureRuntime, logger });
+    }, { commands: appCliCommands });
+
+    return runtimePromise;
   },
 };
 ```

@@ -1,9 +1,8 @@
 import { registry } from "../generated/registry";
 import type { OpenClawLikeApi } from "../framework/openclaw/adapter";
-import { eagerRegisterCli } from "../framework/openclaw/adapter";
 import { bootstrapOpenClawPlugin } from "../framework/openclaw/bootstrap";
+import { appCliCommands, registerAppCli } from "./cli";
 import pluginManifest from "./plugin.manifest";
-import statusCli from "./clis/status.cli";
 
 // CLI definitions are registered synchronously (before any await) so exclude
 // them from the kernel's async registration to avoid Commander duplicates.
@@ -25,8 +24,22 @@ const plugin = {
 			config: api.pluginConfig as Partial<Record<string, unknown>> | undefined,
 		});
 
+		let runtime: Awaited<typeof runtimePromise> | null = null;
+		const ensureRuntime = async () => {
+			if (runtime) {
+				return runtime;
+			}
+			runtime = await runtimePromise;
+			return runtime;
+		};
+
 		// Register CLIs SYNCHRONOUSLY so they exist before Commander parses args.
-		eagerRegisterCli(api, statusCli, runtimePromise);
+		api.registerCli(
+			({ program, logger }) => {
+				registerAppCli({ program, ensureRuntime, logger });
+			},
+			{ commands: appCliCommands }
+		);
 
 		runtimePromise.catch((err) => {
 			const sink = api.logger ?? api.log;

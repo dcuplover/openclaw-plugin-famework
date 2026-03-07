@@ -1,4 +1,5 @@
 import type {
+  CommandInvocationContext,
   HostAdapter,
   HostCliRegistration,
   HostCommandRegistration,
@@ -59,6 +60,13 @@ export class MockHostAdapter implements HostAdapter {
     if (!command) {
       throw new Error(`Command not found: ${name}`);
     }
-    return command.handler(args);
+    const commandContext: CommandInvocationContext = {
+      senderId: "mock-user",
+      channel: "mock-channel",
+      isAuthorizedSender: true,
+      args,
+      commandBody: args ? `/${name} ${args}` : `/${name}`,
+    };
+    return command.handler(commandContext);
   }
 }

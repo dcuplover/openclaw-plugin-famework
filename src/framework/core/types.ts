@@ -33,6 +33,8 @@ export interface HostToolRegistration {
 }
 
 export interface HostHookRegistration {
+  name?: string;
+  description?: string;
   event: string;
   handler: (payload: unknown) => Promise<void>;
   priority: number;
@@ -44,12 +46,21 @@ export interface HostCliRegistration {
   execute: (args: string[]) => Promise<unknown>;
 }
 
+export interface CommandInvocationContext<TConfig = unknown> {
+  senderId?: string;
+  channel?: string;
+  isAuthorizedSender?: boolean;
+  args?: string;
+  commandBody?: string;
+  config?: TConfig;
+}
+
 export interface HostCommandRegistration {
   name: string;
-  description: string;
+  description?: string;
   acceptsArgs?: boolean;
   requireAuth?: boolean;
-  handler: (args?: string) => Promise<{ text: string }>;
+  handler: (commandContext?: CommandInvocationContext) => Promise<{ text: string }>;
 }
 
 export interface HostAdapter {
@@ -110,11 +121,11 @@ export interface CliDefinition<TConfig = unknown> extends BaseDefinition {
 
 export interface CommandDefinition<TConfig = unknown> extends BaseDefinition {
   kind: "command";
-  description: string;
+  description?: string;
   acceptsArgs?: boolean;
   requireAuth?: boolean;
   handler: (
-    args: string | undefined,
+    commandContext: CommandInvocationContext<TConfig>,
     context: RuntimeContext<TConfig>
   ) => Promise<{ text: string }> | { text: string };
 }

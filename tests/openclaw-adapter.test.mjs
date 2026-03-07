@@ -112,6 +112,7 @@ test('CLI action normalizes args and emits result text', async () => {
 
 test('registerCommand wires OpenClaw registerCommand with name, description, and handler', async () => {
   let capturedDefinition;
+  let receivedCommandContext;
 
   const api = {
     registerTool() {},
@@ -128,8 +129,9 @@ test('registerCommand wires OpenClaw registerCommand with name, description, and
     description: 'Reply hello',
     acceptsArgs: true,
     requireAuth: false,
-    async handler() {
-      return { text: 'hello' };
+    async handler(commandContext) {
+      receivedCommandContext = commandContext;
+      return { text: commandContext?.args ?? 'hello' };
     },
   });
 
@@ -139,8 +141,78 @@ test('registerCommand wires OpenClaw registerCommand with name, description, and
   assert.equal(capturedDefinition.requireAuth, false);
   assert.equal(typeof capturedDefinition.handler, 'function');
 
-  const result = await capturedDefinition.handler();
+  const result = await capturedDefinition.handler({
+    senderId: 'user-1',
+    channel: 'chat',
+    isAuthorizedSender: true,
+    args: 'hello',
+    commandBody: '/hello hello',
+  });
+  assert.deepEqual(receivedCommandContext, {
+    senderId: 'user-1',
+    channel: 'chat',
+    isAuthorizedSender: true,
+    args: 'hello',
+    commandBody: '/hello hello',
+    config: undefined,
+  });
   assert.deepEqual(result, { text: 'hello' });
+});
+
+test('registerCommand applies documented defaults for acceptsArgs and requireAuth', async () => {
+  let capturedDefinition;
+
+  const api = {
+    registerTool() {},
+    on() {},
+    registerCli() {},
+    registerCommand(definition) {
+      capturedDefinition = definition;
+    },
+  };
+
+  const adapter = createOpenClawAdapter(api);
+  adapter.registerCommand({
+    name: 'hello',
+    async handler(commandContext) {
+      return { text: commandContext?.args ?? 'hello' };
+    },
+  });
+
+  assert.equal(capturedDefinition.description, undefined);
+  assert.equal(capturedDefinition.acceptsArgs, false);
+  assert.equal(capturedDefinition.requireAuth, true);
+
+  const result = await capturedDefinition.handler({ args: 'hi' });
+  assert.deepEqual(result, { text: 'hi' });
+});
+
+test('registerHook forwards hook metadata through api.on opts', async () => {
+  const events = [];
+
+  const api = {
+    registerTool() {},
+    on(event, handler, opts) {
+      events.push([event, typeof handler, opts]);
+    },
+    registerCli() {},
+    registerCommand() {},
+  };
+
+  const adapter = createOpenClawAdapter(api);
+  adapter.registerHook({
+    name: 'track_before_agent_start',
+    description: 'Track before_agent_start events',
+    event: 'before_agent_start',
+    priority: 50,
+    async handler() {},
+  });
+
+  assert.deepEqual(events, [[
+    'before_agent_start',
+    'function',
+    { name: 'track_before_agent_start', description: 'Track before_agent_start events', priority: 50 },
+  ]]);
 });
 
 test('registerTool uses factory pattern and normalizes plain results to content format', async () => {
@@ -209,6 +281,30 @@ test('registerTool passes through results already in content format', async () =
   const result = await toolDef.execute('call-2', {});
   assert.deepEqual(result.content, [{ type: 'text', text: 'native result' }]);
   assert.deepEqual(result.details, { count: 1 });
+});
+
+test('registerTool normalizes a single content item object', async () => {
+  let capturedFactory;
+
+  const api = {
+    registerTool(factory) { capturedFactory = factory; },
+    on() {},
+    registerCli() {},
+    registerCommand() {},
+  };
+
+  const adapter = createOpenClawAdapter(api);
+  adapter.registerTool({
+    name: 'single_content_item',
+    description: 'Tool returning one text item',
+    async execute() {
+      return { type: 'text', text: 'hello item' };
+    },
+  });
+
+  const toolDef = capturedFactory({});
+  const result = await toolDef.execute('call-4', {});
+  assert.deepEqual(result.content, [{ type: 'text', text: 'hello item' }]);
 });
 
 test('registerTool uses fallback schema when none provided', async () => {

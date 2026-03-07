@@ -5,9 +5,9 @@ export default function register(api) {
   api.registerCommand({
     name: "hello",
     description: "Reply hello",
-    handler: async () => {
+    handler: async (commandContext) => {
       return {
-        text: "hello",
+        text: `hello ${commandContext?.args ?? ""}`.trim(),
       };
     },
   });
@@ -28,7 +28,8 @@ export default function register(api) {
 export default function register(api) {
   api.registerCommand({
     name: "hello",
-    handler: async () => {
+    handler: async (commandContext) => {
+      console.log(commandContext?.senderId);
       return { text: "hello" };
     },
   });
@@ -42,6 +43,7 @@ export default function register(api) {
 - `description`
 - `acceptsArgs`
 - `requireAuth`
+- `commandContext.senderId / args / channel`
 
 ### 返回值
 

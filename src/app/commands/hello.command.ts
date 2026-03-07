@@ -4,7 +4,13 @@ export default defineCommand({
   kind: "command",
   name: "hello",
   description: "Reply hello",
-  handler(_args, _context) {
-    return { text: "hello this is a test" };
+  acceptsArgs: true,
+  requireAuth: true,
+  handler(commandContext, _context) {
+    const sender = commandContext.senderId ?? "unknown-sender";
+    const channel = commandContext.channel ?? "unknown-channel";
+    const suffix = commandContext.args ? ` ${commandContext.args}` : "";
+
+    return { text: `hello${suffix} from ${sender} via ${channel}` };
   },
 });

@@ -27,8 +27,8 @@ async function main(): Promise<void> {
 
   await host.emit("before_agent_start", { source: "demo" });
   const toolResult = await host.invokeTool("greet_user", { name: "OpenClaw" });
-  const cliResult = await host.runCli("framework:status", []);
-  const commandResult = await host.runCommand("hello");
+  const cliResult = await host.runCli("framework", ["status"]);
+  const commandResult = await host.runCommand("hello", "OpenClaw");
 
   console.log("Tool result:", toolResult);
   console.log("CLI result:", cliResult);
