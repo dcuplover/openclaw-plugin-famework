@@ -1,10 +1,13 @@
 import type {
+  CliDefinition,
   FrameworkLogger,
   HostAdapter,
   HostCliRegistration,
   HostCommandRegistration,
   HostHookRegistration,
   HostToolRegistration,
+  KernelRuntime,
+  RuntimeContext,
 } from "../core/types";
 
 export interface OpenClawCliCommandLike {
@@ -186,4 +189,42 @@ export function createOpenClawAdapter(api: OpenClawLikeApi, logger?: FrameworkLo
       logger?.info("Registered OpenClaw command", { name: command.name });
     },
   };
+}
+
+/**
+ * Register a CLI definition synchronously with OpenClaw's Commander program.
+ *
+ * OpenClaw may not `await` the async `register(api)` call, so `api.registerCli`
+ * must be invoked synchronously — before any `await` — to ensure Commander
+ * recognises the command at startup. The action handler defers execution until
+ * the kernel's bootstrap promise resolves.
+ */
+export function eagerRegisterCli<TConfig = unknown>(
+  api: OpenClawLikeApi,
+  cliDef: CliDefinition<TConfig>,
+  runtimePromise: Promise<KernelRuntime<TConfig>>,
+  logger?: FrameworkLogger
+): void {
+  api.registerCli(
+    ({ program, logger: cliLogger }) => {
+      program
+        .command(cliDef.name)
+        .description(cliDef.description ?? "")
+        .action(async (...actionArgs: unknown[]) => {
+          const runtime = await runtimePromise;
+          const context: RuntimeContext<TConfig> = {
+            config: runtime.container.resolve<TConfig>("config"),
+            container: runtime.container,
+            diagnostics: runtime.diagnostics,
+            logger: runtime.container.resolve<FrameworkLogger>("logger"),
+            host: runtime.container.resolve<HostAdapter>("host"),
+          };
+          const normalizedArgs = normalizeCliArgs(actionArgs);
+          const result = await cliDef.execute(normalizedArgs, context);
+          emitCommandResult(result, cliLogger ?? logger);
+        });
+    },
+    { commands: [cliDef.name] }
+  );
+  logger?.info("Eager-registered OpenClaw CLI", { name: cliDef.name });
 }
