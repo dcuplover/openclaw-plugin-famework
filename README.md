@@ -51,6 +51,7 @@ Use `artifacts/app/` as the plugin root for `plugins.load.paths` or local instal
 
 - `README.md`: quick project overview
 - `docs/QUICKSTART.zh-CN.md`: fast path for registering module / tool / hook / chat command / CLI
+- `docs/OpenClaw扩展开发框架整体设计说明.md`: product direction, layering, package split, and CLI scaffolding strategy
 - `docs/ARCHITECTURE.md`: architectural rationale and evolution direction
 - `docs/USAGE_GUIDE.zh-CN.md`: detailed framework usage guide in Chinese
 
