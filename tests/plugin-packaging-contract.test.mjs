@@ -1,11 +1,21 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 
 const require = createRequire(import.meta.url);
 const { toOpenClawPluginJson, toPackageJsonFields } = require('../artifacts/app/framework/plugin/manifest.js');
 const pluginManifest = require('../artifacts/app/app/plugin.manifest.js').default;
 const entryModule = require('../artifacts/app/index.js');
+
+test('generated registry infers config type from plugin manifest', () => {
+  const registrySource = readFileSync(new URL('../src/generated/registry.ts', import.meta.url), 'utf8');
+
+  assert.match(registrySource, /import type \{ PluginManifest \} from "\.\.\/framework\/plugin\/manifest";/);
+  assert.match(registrySource, /typeof import\("\.\.\/app\/plugin\.manifest"\)\.default extends PluginManifest<infer TConfig>/);
+  assert.match(registrySource, /export const registry: DefinitionRegistry<RegistryConfig> = \{/);
+  assert.doesNotMatch(registrySource, /export const registry: DefinitionRegistry = \{/);
+});
 
 test('package.json projection includes guide-compatible openclaw.extensions', () => {
   const packageJson = toPackageJsonFields(pluginManifest);

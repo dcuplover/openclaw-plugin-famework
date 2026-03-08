@@ -1,18 +1,19 @@
 import { defineModule } from "../../framework/core/definition";
+import type { ExampleAppConfig } from "../plugin.manifest";
 import type { PlatformDescriptor } from "./platform.module";
 
 export interface GreeterService {
   greet(name: string): string;
 }
 
-export default defineModule({
+export default defineModule<ExampleAppConfig>({
   kind: "module",
   name: "greeter",
   dependsOn: ["platform"],
   provides: ["greeter"],
   setup(context) {
     const platform = context.container.resolve<PlatformDescriptor>("platform");
-    const prefix = String((context.config as Record<string, unknown>).greetingPrefix ?? "Hello");
+    const prefix = context.config.greetingPrefix;
 
     const greeter: GreeterService = {
       greet(name: string): string {

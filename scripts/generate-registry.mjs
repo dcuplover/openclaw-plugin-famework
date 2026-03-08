@@ -1,16 +1,19 @@
 import { promises as fs } from "node:fs";
 import path from "node:path";
 
-const [, , sourceRootArg, outputArg] = process.argv;
+const [, , sourceRootArg, outputArg, manifestSourceArg] = process.argv;
 
-if (!sourceRootArg || !outputArg) {
-  console.error("Usage: node generate-registry.mjs <source-root> <output-file>");
+if (!sourceRootArg || !outputArg || !manifestSourceArg) {
+  console.error(
+    "Usage: node generate-registry.mjs <source-root> <output-file> <manifest-source-file>"
+  );
   process.exit(1);
 }
 
 const cwd = process.cwd();
 const sourceRoot = path.resolve(cwd, sourceRootArg);
 const outputFile = path.resolve(cwd, outputArg);
+const manifestSourceFile = path.resolve(cwd, manifestSourceArg);
 
 const groups = [
   { key: "modules", directory: "modules", suffix: ".module.ts" },
@@ -58,10 +61,26 @@ async function collect(group) {
   }
 }
 
+function toManifestImportPath(filePath) {
+  const relative = path
+    .relative(path.dirname(outputFile), filePath)
+    .replace(/\\/g, "/")
+    .replace(/\.ts$/, "");
+  return relative.startsWith(".") ? relative : `./${relative}`;
+}
+
+const manifestImportPath = toManifestImportPath(manifestSourceFile);
+
 const lines = [
   "import type { DefinitionRegistry } from \"../framework/core/types\";",
+  "import type { PluginManifest } from \"../framework/plugin/manifest\";",
   "",
-  "export const registry: DefinitionRegistry = {",
+  "type RegistryConfig =",
+  `  typeof import(\"${manifestImportPath}\").default extends PluginManifest<infer TConfig>`,
+  "    ? TConfig",
+  "    : unknown;",
+  "",
+  "export const registry: DefinitionRegistry<RegistryConfig> = {",
 ];
 
 for (const group of groups) {

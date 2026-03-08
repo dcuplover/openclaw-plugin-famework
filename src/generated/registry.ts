@@ -1,6 +1,12 @@
 import type { DefinitionRegistry } from "../framework/core/types";
+import type { PluginManifest } from "../framework/plugin/manifest";
 
-export const registry: DefinitionRegistry = {
+type RegistryConfig =
+  typeof import("../app/plugin.manifest").default extends PluginManifest<infer TConfig>
+    ? TConfig
+    : unknown;
+
+export const registry: DefinitionRegistry<RegistryConfig> = {
   modules: [
   () => import("../app/modules/greeter.module"),
   () => import("../app/modules/platform.module"),

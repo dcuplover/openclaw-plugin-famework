@@ -100,7 +100,7 @@ function run(label, command) {
 // --- Phase 1: Generate registry ---
 run(
   "Generating registry",
-  `node ./scripts/generate-registry.mjs "${appRoot}" "${registryPath}"`
+  `node ./scripts/generate-registry.mjs "${appRoot}" "${registryPath}" "${manifestSourcePath}"`
 );
 
 // --- Phase 2: Clean previous artifact & compile TypeScript directly to artifact dir ---
