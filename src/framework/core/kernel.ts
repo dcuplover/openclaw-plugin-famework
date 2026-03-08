@@ -81,8 +81,8 @@ async function registerTools<TConfig>(
   }
 }
 
-async function registerHooks<TConfig>(
-  definitions: HookDefinition<TConfig>[],
+async function registerHooks<TConfig, THookContext>(
+  definitions: HookDefinition<TConfig, THookContext>[],
   context: RuntimeContext<TConfig>
 ): Promise<void> {
   const ordered = [...definitions].sort((left, right) => (right.priority ?? 0) - (left.priority ?? 0));
@@ -92,8 +92,8 @@ async function registerHooks<TConfig>(
       description: definition.description,
       event: definition.event,
       priority: definition.priority ?? 0,
-      handler: async (payload) => {
-        await definition.handle(payload, context);
+      handler: async (event, hookContext: THookContext | undefined) => {
+        await definition.handle(event, context, hookContext);
       },
     });
     context.diagnostics.loadedHooks.push(`${definition.event}:${definition.name}`);
@@ -139,8 +139,8 @@ async function registerCommands<TConfig>(
   }
 }
 
-export async function bootstrapMicrokernel<TConfig>(
-  options: BootstrapOptions<TConfig>
+export async function bootstrapMicrokernel<TConfig, THookContext = unknown>(
+  options: BootstrapOptions<TConfig, THookContext>
 ): Promise<KernelRuntime<TConfig>> {
   const logger = options.logger ?? createConsoleLogger(options.appId);
   const container = new MapServiceContainer();

@@ -2,7 +2,7 @@ import { bootstrapMicrokernel } from "../core/kernel";
 import { createConsoleLogger } from "../core/logger";
 import type { BootstrapOptions, DefinitionRegistry, FrameworkLogger, KernelRuntime } from "../core/types";
 import type { PluginManifest } from "../plugin/manifest";
-import { createOpenClawAdapter, type OpenClawLikeApi } from "./adapter";
+import { createOpenClawAdapter, type OpenClawHookContext, type OpenClawLikeApi } from "./adapter";
 
 export interface OpenClawPluginEntrypointOptions<TConfig = unknown> {
   api: OpenClawLikeApi;
@@ -70,7 +70,7 @@ function createOpenClawLogger(api: OpenClawLikeApi, prefix: string): FrameworkLo
 
 export function bootstrapOpenClawPlugin<TConfig = unknown>(
   manifest: PluginManifest<TConfig>,
-  registry: DefinitionRegistry<TConfig>
+  registry: DefinitionRegistry<TConfig, OpenClawHookContext>
 ): (options: OpenClawPluginEntrypointOptions<TConfig>) => Promise<KernelRuntime<TConfig>> {
   return async function openClawPluginEntrypoint(
     options: OpenClawPluginEntrypointOptions<TConfig>
@@ -79,7 +79,7 @@ export function bootstrapOpenClawPlugin<TConfig = unknown>(
     const host = createOpenClawAdapter(options.api, logger);
     const config = mergeConfig(manifest.app.defaultConfig, options.config);
 
-    const bootstrapOptions: BootstrapOptions<TConfig> = {
+    const bootstrapOptions: BootstrapOptions<TConfig, OpenClawHookContext> = {
       appId: manifest.id,
       config,
       registry,

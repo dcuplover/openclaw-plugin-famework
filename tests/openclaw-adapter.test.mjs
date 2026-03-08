@@ -215,6 +215,43 @@ test('registerHook forwards hook metadata through api.on opts', async () => {
   ]]);
 });
 
+test('registerHook forwards both event payload and host hook context', async () => {
+  let capturedHandler;
+  let receivedEvent;
+  let receivedHookContext;
+
+  const api = {
+    registerTool() {},
+    on(_event, handler) {
+      capturedHandler = handler;
+    },
+    registerCli() {},
+    registerCommand() {},
+  };
+
+  const adapter = createOpenClawAdapter(api);
+  adapter.registerHook({
+    event: 'before_agent_start',
+    priority: 10,
+    async handler(event, hookContext) {
+      receivedEvent = event;
+      receivedHookContext = hookContext;
+    },
+  });
+
+  await capturedHandler(
+    { prompt: 'hello' },
+    { sessionId: 'session-1', sessionKey: 'stable-1', agentId: 'agent-1' },
+  );
+
+  assert.deepEqual(receivedEvent, { prompt: 'hello' });
+  assert.deepEqual(receivedHookContext, {
+    sessionId: 'session-1',
+    sessionKey: 'stable-1',
+    agentId: 'agent-1',
+  });
+});
+
 test('registerTool uses factory pattern and normalizes plain results to content format', async () => {
   let capturedFactory;
   let capturedMeta;

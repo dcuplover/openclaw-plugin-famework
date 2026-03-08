@@ -32,10 +32,10 @@ export class MockHostAdapter implements HostAdapter {
     this.commands.set(command.name, command);
   }
 
-  async emit(event: string, payload: unknown): Promise<void> {
+  async emit(event: string, payload: unknown, hookContext?: unknown): Promise<void> {
     const hooks = this.hooks.get(event) ?? [];
     for (const hook of hooks) {
-      await hook.handler(payload);
+      await hook.handler(payload, hookContext);
     }
   }
 

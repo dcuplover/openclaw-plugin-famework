@@ -18,9 +18,9 @@ export function defineTool<TConfig = unknown>(
   return definition;
 }
 
-export function defineHook<TConfig = unknown>(
-  definition: HookDefinition<TConfig>
-): HookDefinition<TConfig> {
+export function defineHook<TConfig = unknown, THookContext = unknown>(
+  definition: HookDefinition<TConfig, THookContext>
+): HookDefinition<TConfig, THookContext> {
   return definition;
 }
 

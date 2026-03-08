@@ -261,6 +261,72 @@ test('bootstrapMicrokernel enriches command invocation context with config', asy
   await runtime.shutdown();
 });
 
+test('bootstrapMicrokernel passes host hook context through to hook definitions', async () => {
+  const registeredHooks = [];
+  let receivedEvent;
+  let receivedRuntimeContext;
+  let receivedHookContext;
+
+  const host = {
+    registerTool() {},
+    registerHook(hook) {
+      registeredHooks.push(hook);
+    },
+    registerCli() {},
+    registerCommand() {},
+  };
+
+  const logger = {
+    info() {},
+    warn() {},
+    error() {},
+  };
+
+  const registry = {
+    modules: [],
+    tools: [],
+    hooks: [
+      async () => ({
+        kind: 'hook',
+        name: 'inspect_hook_ctx',
+        event: 'before_agent_start',
+        async handle(event, runtimeContext, hookContext) {
+          receivedEvent = event;
+          receivedRuntimeContext = runtimeContext;
+          receivedHookContext = hookContext;
+        },
+      }),
+    ],
+    clis: [],
+    commands: [],
+  };
+
+  const runtime = await bootstrapMicrokernel({
+    appId: 'app',
+    config: { environment: 'test' },
+    registry,
+    host,
+    logger,
+  });
+
+  assert.equal(registeredHooks.length, 1);
+  await registeredHooks[0].handler(
+    { prompt: 'hello' },
+    { sessionId: 'session-1', sessionKey: 'stable-1', agentId: 'agent-1' },
+  );
+
+  assert.deepEqual(receivedEvent, { prompt: 'hello' });
+  assert.equal(receivedRuntimeContext.config.environment, 'test');
+  assert.equal(typeof receivedRuntimeContext.container.resolve, 'function');
+  assert.deepEqual(receivedHookContext, {
+    sessionId: 'session-1',
+    sessionKey: 'stable-1',
+    agentId: 'agent-1',
+  });
+
+  await runtime.shutdown();
+});
+
 test('bootstrapMicrokernel forwards hook name, description, and priority to the host', async () => {
   const registeredHooks = [];
   const host = {

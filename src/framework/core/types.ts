@@ -32,11 +32,15 @@ export interface HostToolRegistration {
   execute: (params: Record<string, unknown>) => Promise<unknown>;
 }
 
-export interface HostHookRegistration {
+export type HostHookHandler<THookContext = unknown> = {
+  bivarianceHack(event: unknown, hookContext?: THookContext): Promise<void> | void;
+}["bivarianceHack"];
+
+export interface HostHookRegistration<THookContext = unknown> {
   name?: string;
   description?: string;
   event: string;
-  handler: (payload: unknown) => Promise<void>;
+  handler: HostHookHandler<THookContext>;
   priority: number;
 }
 
@@ -65,7 +69,7 @@ export interface HostCommandRegistration {
 
 export interface HostAdapter {
   registerTool(tool: HostToolRegistration): Promise<void> | void;
-  registerHook(hook: HostHookRegistration): Promise<void> | void;
+  registerHook<THookContext = unknown>(hook: HostHookRegistration<THookContext>): Promise<void> | void;
   registerCli(cli: HostCliRegistration): Promise<void> | void;
   registerCommand(command: HostCommandRegistration): Promise<void> | void;
 }
@@ -107,10 +111,14 @@ export interface ToolDefinition<TConfig = unknown> extends BaseDefinition {
   ) => Promise<unknown> | unknown;
 }
 
-export interface HookDefinition<TConfig = unknown> extends BaseDefinition {
+export type HookHandler<TConfig = unknown, THookContext = unknown> = {
+  bivarianceHack(event: unknown, context: RuntimeContext<TConfig>, hookContext?: THookContext): Promise<void> | void;
+}["bivarianceHack"];
+
+export interface HookDefinition<TConfig = unknown, THookContext = unknown> extends BaseDefinition {
   kind: "hook";
   event: string;
-  handle: (payload: unknown, context: RuntimeContext<TConfig>) => Promise<void> | void;
+  handle: HookHandler<TConfig, THookContext>;
 }
 
 export interface CliDefinition<TConfig = unknown> extends BaseDefinition {
@@ -139,18 +147,18 @@ export type AnyDefinition<TConfig = unknown> =
 
 export type DefinitionLoader<T> = () => Promise<T | { default: T }>;
 
-export interface DefinitionRegistry<TConfig = unknown> {
+export interface DefinitionRegistry<TConfig = unknown, THookContext = unknown> {
   modules: Array<DefinitionLoader<ModuleDefinition<TConfig>>>;
   tools: Array<DefinitionLoader<ToolDefinition<TConfig>>>;
-  hooks: Array<DefinitionLoader<HookDefinition<TConfig>>>;
+  hooks: Array<DefinitionLoader<HookDefinition<TConfig, THookContext>>>;
   clis: Array<DefinitionLoader<CliDefinition<TConfig>>>;
   commands: Array<DefinitionLoader<CommandDefinition<TConfig>>>;
 }
 
-export interface BootstrapOptions<TConfig = unknown> {
+export interface BootstrapOptions<TConfig = unknown, THookContext = unknown> {
   appId: string;
   config: TConfig;
-  registry: DefinitionRegistry<TConfig>;
+  registry: DefinitionRegistry<TConfig, THookContext>;
   host: HostAdapter;
   logger?: FrameworkLogger;
 }

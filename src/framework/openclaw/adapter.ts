@@ -7,6 +7,7 @@ import type {
   HostCommandRegistration,
   HostHookRegistration,
   HostToolRegistration,
+  HookDefinition,
   KernelRuntime,
   RuntimeContext,
 } from "../core/types";
@@ -32,6 +33,28 @@ export interface OpenClawCliContext {
   };
 }
 
+export interface OpenClawHookContext {
+  agentId?: string;
+  sessionId?: string;
+  sessionKey?: string;
+  workspaceDir?: string;
+  messageProvider?: string;
+  trigger?: string;
+  channelId?: string;
+  runId?: string;
+  toolName?: string;
+  toolCallId?: string;
+  [key: string]: unknown;
+}
+
+export type OpenClawHookDefinition<TConfig = unknown> = HookDefinition<TConfig, OpenClawHookContext>;
+
+export function defineOpenClawHook<TConfig = unknown>(
+  definition: OpenClawHookDefinition<TConfig>
+): OpenClawHookDefinition<TConfig> {
+  return definition;
+}
+
 export interface OpenClawLikeApi {
   registerTool(definition: unknown, meta?: unknown): void;
   registerCli(factory: (context: OpenClawCliContext) => void, meta?: { commands?: string[] }): void;
@@ -44,7 +67,7 @@ export interface OpenClawLikeApi {
   }): void;
   on(
     event: string,
-    handler: (payload: unknown) => Promise<void> | void,
+    handler: (event: unknown, hookContext?: OpenClawHookContext) => Promise<void> | void,
     opts?: { name?: string; description?: string; priority?: number }
   ): void;
   pluginConfig?: Record<string, unknown>;
